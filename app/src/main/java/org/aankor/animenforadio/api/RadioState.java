@@ -99,6 +99,7 @@ public class RadioState {
                 );
             }
 
+            currentSong.setArtUrl(doc.select("div img").first().attr("src"));
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {

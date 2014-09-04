@@ -11,6 +11,8 @@ public class SongInfo {
     private String series = "";
     private String genre = "";
 
+    private String artUrl = "";
+
     public SongInfo(String artist, String title, String album, String albumType, String series, String genre) {
         this.artist = artist;
         this.title = title;
@@ -42,5 +44,13 @@ public class SongInfo {
 
     public String getGenre() {
         return genre;
+    }
+
+    public String getArtUrl() {
+        return artUrl;
+    }
+
+    public void setArtUrl(String artUrl) {
+        this.artUrl = artUrl;
     }
 }

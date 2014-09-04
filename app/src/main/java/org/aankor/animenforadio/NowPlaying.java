@@ -2,14 +2,21 @@ package org.aankor.animenforadio;
 
 import android.app.Fragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.aankor.animenforadio.api.RadioState;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  *
@@ -30,6 +37,9 @@ public class NowPlaying extends Fragment {
         final TextView albumTypeView = (TextView) rootView.findViewById(R.id.albumTypeView);
         final TextView seriesView = (TextView) rootView.findViewById(R.id.seriesView);
         final TextView genreView = (TextView) rootView.findViewById(R.id.genreView);
+
+        final ImageView albumArtView = (ImageView) rootView.findViewById(R.id.albumArtView);
+
         playStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -41,21 +51,34 @@ public class NowPlaying extends Fragment {
                         @Override
                         public void run() {
                             radioState.fetch();
-                            getActivity().runOnUiThread(
-                                    new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            if (radioState.currentSong == null)
-                                                return;
+                            try {
+                                URL url = new URL(radioState.currentSong.getArtUrl());
+                                final Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
 
-                                            artistView.setText(radioState.currentSong.getArtist());
-                                            titleView.setText(radioState.currentSong.getTitle());
-                                            albumView.setText(radioState.currentSong.getAlbum());
-                                            albumTypeView.setText(radioState.currentSong.getAlbumType());
-                                            seriesView.setText(radioState.currentSong.getSeries());
-                                            genreView.setText(radioState.currentSong.getGenre());
-                                        }
-                                    });
+                                getActivity().runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                if (radioState.currentSong == null)
+                                                    return;
+
+                                                artistView.setText(radioState.currentSong.getArtist());
+                                                titleView.setText(radioState.currentSong.getTitle());
+                                                albumView.setText(radioState.currentSong.getAlbum());
+                                                albumTypeView.setText(radioState.currentSong.getAlbumType());
+                                                seriesView.setText(radioState.currentSong.getSeries());
+                                                genreView.setText(radioState.currentSong.getGenre());
+
+                                                albumArtView.setImageBitmap(bmp);
+                                            }
+                                        });
+
+                            } catch (MalformedURLException e) {
+                                e.printStackTrace();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
                         }
                     }).start();
                 }
