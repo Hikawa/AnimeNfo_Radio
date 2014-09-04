@@ -2,17 +2,65 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
     tools:context=".NowPlaying">
 
     <ImageButton
+        android:id="@+id/playStopButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/playStopButton"
-        android:background="@drawable/player_play"
-        android:layout_alignParentLeft="true" />
+        android:layout_alignParentLeft="true"
+        android:background="@drawable/player_play" />
+
+    <TextView
+        android:id="@+id/artistView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/playStopButton"
+        android:text="New Text" />
+
+    <TextView
+        android:id="@+id/titleView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/artistView"
+        android:layout_toRightOf="@+id/playStopButton"
+        android:text="New Text" />
+
+    <TextView
+        android:id="@+id/albumView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/titleView"
+        android:layout_toRightOf="@+id/playStopButton"
+        android:text="New Text" />
+
+    <TextView
+        android:id="@+id/albumTypeView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/albumView"
+        android:layout_toRightOf="@+id/playStopButton"
+        android:text="New Text" />
+
+    <TextView
+        android:id="@+id/seriesView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/albumTypeView"
+        android:layout_below="@+id/albumTypeView"
+        android:text="New Text" />
+
+    <TextView
+        android:id="@+id/genreView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignRight="@+id/seriesView"
+        android:layout_below="@+id/seriesView"
+        android:text="New Text" />
 
 </RelativeLayout>
