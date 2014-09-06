@@ -8,14 +8,19 @@ import android.view.MenuItem;
 
 public class Main extends Activity {
 
+    private NowPlaying nowPlaying;
+    private RadioPlayer radioPlayer;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction()
-                    .add(R.id.container, new NowPlaying())
+                    .add(R.id.container, nowPlaying = new NowPlaying())
+                    .add(R.id.container, radioPlayer = new RadioPlayer())
                     .commit();
+            radioPlayer.addOnSongChangeListener(nowPlaying);
         }
     }
 

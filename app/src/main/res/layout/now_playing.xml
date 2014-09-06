@@ -24,11 +24,12 @@
         <TableLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="3">
+            android:layout_weight="3"
+            android:shrinkColumns="1">
 
             <TableRow>
 
-                <TextView android:text="Artist:" />
+                <TextView android:text="Artist: " />
 
                 <TextView
                     android:id="@+id/artistView"
@@ -37,7 +38,7 @@
 
             <TableRow>
 
-                <TextView android:text="Title:" />
+                <TextView android:text="Title: " />
 
                 <TextView
                     android:id="@+id/titleView"
@@ -46,7 +47,7 @@
 
             <TableRow>
 
-                <TextView android:text="Album:" />
+                <TextView android:text="Album: " />
 
                 <TextView
                     android:id="@+id/albumView"
@@ -55,16 +56,7 @@
 
             <TableRow>
 
-                <TextView android:text="Album type:" />
-
-                <TextView
-                    android:id="@+id/albumTypeView"
-                    android:text="New Text" />
-            </TableRow>
-
-            <TableRow>
-
-                <TextView android:text="Series:" />
+                <TextView android:text="Series: " />
 
                 <TextView
                     android:id="@+id/seriesView"
@@ -73,7 +65,7 @@
 
             <TableRow>
 
-                <TextView android:text="Genre:" />
+                <TextView android:text="Genre: " />
 
                 <TextView
                     android:id="@+id/genreView"
@@ -81,12 +73,4 @@
             </TableRow>
         </TableLayout>
     </LinearLayout>
-
-    <ImageButton
-        android:id="@+id/playStopButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/player_play" />
-
-
 </LinearLayout>

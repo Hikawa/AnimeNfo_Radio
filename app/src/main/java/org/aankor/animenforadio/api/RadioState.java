@@ -1,7 +1,5 @@
 package org.aankor.animenforadio.api;
 
-import android.util.Log;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -44,7 +42,8 @@ public class RadioState {
             phpSessID = matcher.group(1);
     }
 
-    public void fetch() {
+    // returns: song changed
+    public boolean fetch() {
         try {
             fetchCookies();
             URL url = new URL("https://www.animenfo.com/radio/index.php?t=" + (new Date()).getTime());
@@ -87,25 +86,29 @@ public class RadioState {
             Document doc = Jsoup.parse(nowPlaying);
 
             Matcher matcher = nowPlayingPattern1.matcher(doc.select("div .float-container .row .span6").first().text());
-            if (matcher.find()) {
-                Log.i("regexp", "found");
-                currentSong = new SongInfo(
-                        matcher.group(1),
-                        matcher.group(2),
-                        matcher.group(3),
-                        matcher.group(4),
-                        matcher.group(5),
-                        matcher.group(6)
-                );
-            }
 
-            currentSong.setArtUrl(doc.select("div img").first().attr("src"));
+            if (!matcher.find())
+                return false; // wtf
+            SongInfo newSongInfo = new SongInfo(
+                    matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3),
+                    matcher.group(4),
+                    matcher.group(5),
+                    matcher.group(6)
+            );
+
+            newSongInfo.setArtUrl(doc.select("div img").first().attr("src"));
+            if (!newSongInfo.equals(currentSong)) {
+                currentSong = newSongInfo;
+                return true;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        // Document doc = Jsoup.connect(url).data()
+        return false;
     }
 
 }

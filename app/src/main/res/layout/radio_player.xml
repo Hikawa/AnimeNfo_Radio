@@ -1,0 +1,36 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/radio_player_height"
+    android:layout_gravity="bottom"
+    android:padding="@dimen/radio_player_margin"
+    tools:context="org.aankor.animenforadio.RadioPlayer">
+
+    <ImageView
+        android:id="@+id/albumMiniArtView"
+        android:layout_width="@dimen/radio_player_height"
+        android:layout_height="match_parent"
+        android:contentDescription="Album Art" />
+
+    <ImageButton
+        android:id="@+id/playStopButton"
+        android:layout_width="@dimen/radio_player_height"
+        android:layout_height="@dimen/radio_player_height"
+        android:layout_toRightOf="@id/albumMiniArtView"
+        android:background="@drawable/player_play" />
+
+    <TextView
+        android:id="@+id/songNameView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_toRightOf="@id/playStopButton"
+        android:text="New text" />
+
+    <ProgressBar
+        android:id="@+id/progressView"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/playStopButton" />
+</RelativeLayout>
