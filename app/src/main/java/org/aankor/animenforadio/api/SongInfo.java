@@ -65,15 +65,6 @@ public class SongInfo {
 
     public void setArtUrl(String artUrl) {
         this.artUrl = artUrl;
-        URL url = null;
-        try {
-            url = new URL(artUrl);
-            artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public Bitmap getArtBmp() {
@@ -137,5 +128,16 @@ public class SongInfo {
                 other.series.equals(series) &&
                 other.genre.equals(genre) &&
                 other.artUrl.equals(artUrl);
+    }
+
+    public void fetchAlbumArt() {
+        try {
+            URL url = new URL(artUrl);
+            artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
