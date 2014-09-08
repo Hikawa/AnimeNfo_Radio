@@ -1,8 +1,12 @@
 package org.aankor.animenforadio;
 
 import android.app.Fragment;
-import android.graphics.Bitmap;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +18,7 @@ import org.aankor.animenforadio.api.SongInfo;
 /**
  *
  */
-public class NowPlaying extends Fragment implements RadioPlayer.OnSongChangeListener {
+public class NowPlaying extends Fragment implements ServiceConnection {
     private TextView artistView;
     private TextView titleView;
     private TextView albumView;
@@ -22,6 +26,8 @@ public class NowPlaying extends Fragment implements RadioPlayer.OnSongChangeList
     private TextView seriesView;
     private TextView genreView;
     private ImageView albumArtView;
+
+    private WebsiteService.WebsiteBinder website;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -40,13 +46,51 @@ public class NowPlaying extends Fragment implements RadioPlayer.OnSongChangeList
     }
 
     @Override
-    public void onSongChange(final SongInfo songInfo, final Bitmap bmp) {
-        artistView.setText(songInfo.getArtist());
-        titleView.setText(songInfo.getTitle());
-        albumView.setText(songInfo.getAlbum() + " (" + songInfo.getAlbumType() + ")");
-        seriesView.setText(songInfo.getSeries());
-        genreView.setText(songInfo.getGenre());
+    public void onStart() {
+        super.onStart();
+        getActivity().bindService(new Intent(getActivity(), WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+    }
 
-        albumArtView.setImageBitmap(bmp);
+    @Override
+    public void onStop() {
+        super.onStop();
+        getActivity().unbindService(this);
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        website = (WebsiteService.WebsiteBinder) iBinder;
+        website.addOnSongChangeListener(new WebsiteService.OnSongChangeListener() {
+            @Override
+            public void onFetchingStarted() {
+
+            }
+
+            @Override
+            public void onSongChanged(final SongInfo s) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        artistView.setText(s.getArtist());
+                        titleView.setText(s.getTitle());
+                        albumView.setText(s.getAlbum() + " (" + s.getAlbumType() + ")");
+                        seriesView.setText(s.getSeries());
+                        genreView.setText(s.getGenre());
+
+                        albumArtView.setImageBitmap(s.getArtBmp());
+                    }
+                });
+            }
+
+            @Override
+            public void onSongRemained() {
+
+            }
+        });
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        website = null;
     }
 }

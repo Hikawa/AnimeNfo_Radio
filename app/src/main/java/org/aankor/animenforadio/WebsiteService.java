@@ -1,5 +1,13 @@
-package org.aankor.animenforadio.api;
+package org.aankor.animenforadio;
 
+import android.app.Service;
+import android.content.Intent;
+import android.os.Binder;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
+
+import org.aankor.animenforadio.api.SongInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -11,19 +19,49 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
-/**
- * Created by aankor on 04.09.14.
- */
-public class RadioState {
-    public SongInfo currentSong;
+public class WebsiteService extends Service {
+    SongInfo currentSong = null;
+    Thread worker = null;
+    Handler handler = null;
+    private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private String phpSessID = "";
     private Pattern nowPlayingPattern1 = Pattern.compile("^Artist: (.*) Title: (.*) Album: (.*) Album Type: (.*) Series: (.*) Genre\\(s\\): (.*)$");
+
+    public WebsiteService() {
+    }
+
+    @Override
+    public void onCreate() {
+        worker = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                handler = new Handler();
+                Looper.loop();
+            }
+        });
+        worker.start();
+    }
+
+    @Override
+    public void onDestroy() {
+        try {
+            handler.getLooper().quit();
+            worker.join();
+            worker = null;
+            handler = null;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void fetchCookies() throws IOException {
         if (phpSessID.isEmpty()) {
@@ -43,7 +81,7 @@ public class RadioState {
     }
 
     // returns: song changed
-    public boolean fetch() {
+    private boolean fetch(EnumSet<FetchPiece> pieces) {
         try {
             fetchCookies();
             URL url = new URL("https://www.animenfo.com/radio/index.php?t=" + (new Date()).getTime());
@@ -111,5 +149,46 @@ public class RadioState {
         return false;
     }
 
-}
+    @Override
+    public IBinder onBind(Intent intent) {
+        return new WebsiteBinder();
+    }
 
+    enum FetchPiece {
+        CURRENT_SONG,
+        QUEUE
+    }
+
+    public interface OnSongChangeListener {
+        void onFetchingStarted();
+
+        void onSongChanged(SongInfo s);
+
+        void onSongRemained();
+    }
+
+    public class WebsiteBinder extends Binder {
+        public void addOnSongChangeListener(final OnSongChangeListener l) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (onSongChangeListeners.isEmpty()) {
+                        l.onFetchingStarted();
+                        fetch(EnumSet.of(FetchPiece.CURRENT_SONG));
+                    }
+                    l.onSongChanged(currentSong);
+                    onSongChangeListeners.add(l);
+                }
+            });
+        }
+
+        public void removeOnSongChangeListener(final OnSongChangeListener l) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    onSongChangeListeners.remove(l);
+                }
+            });
+        }
+    }
+}

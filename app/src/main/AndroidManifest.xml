@@ -25,6 +25,10 @@
             android:enabled="true"
             android:exported="false" >
         </service>
+        <service
+            android:name=".WebsiteService"
+            android:enabled="true"
+            android:exported="false"></service>
     </application>
 
     <uses-permission android:name="android.permission.VIBRATE" />

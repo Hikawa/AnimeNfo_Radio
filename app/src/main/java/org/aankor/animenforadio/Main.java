@@ -20,7 +20,6 @@ public class Main extends Activity {
                     .add(R.id.container, nowPlaying = new NowPlaying())
                     .add(R.id.container, radioPlayer = new RadioPlayer())
                     .commit();
-            radioPlayer.addOnSongChangeListener(nowPlaying);
         }
     }
 
