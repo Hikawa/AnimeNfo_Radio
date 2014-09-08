@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -28,12 +29,16 @@ import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 
 public class WebsiteService extends Service {
+    private final Pattern mainNowPlayingPattern = Pattern.compile("^Artist: (.*) Title: (.*) Album: (.*) Album Type: (.*) Series: (.*) Genre\\(s\\): (.*)$");
+    private final Pattern raitingNowPlayingPattern = Pattern.compile("Rating: (.*)\n");
+    private final Pattern nowPlayingBarPattern = Pattern.compile("^left: ([\\d\\.]*)%$");
     SongInfo currentSong = null;
+    long currentSongStartTime = 0;
     Thread worker = null;
     Handler handler = null;
+    EnumSet<FetchPiece> subscripedPieces = EnumSet.noneOf(FetchPiece.class);
     private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private String phpSessID = "";
-    private Pattern nowPlayingPattern1 = Pattern.compile("^Artist: (.*) Title: (.*) Album: (.*) Album Type: (.*) Series: (.*) Genre\\(s\\): (.*)$");
 
     public WebsiteService() {
     }
@@ -53,14 +58,9 @@ public class WebsiteService extends Service {
 
     @Override
     public void onDestroy() {
-        try {
-            handler.getLooper().quit();
-            worker.join();
-            worker = null;
-            handler = null;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        handler.getLooper().quit();
+        worker = null;
+        handler = null;
     }
 
     private void fetchCookies() throws IOException {
@@ -81,10 +81,17 @@ public class WebsiteService extends Service {
     }
 
     // returns: song changed
-    private boolean fetch(EnumSet<FetchPiece> pieces) {
+    private void fetch(EnumSet<FetchPiece> pieces) {
+        if (pieces.isEmpty())
+            return;
+        addSubscription(pieces);
+        notifyFetchStarted(pieces);
+        long currentTime = (new Date()).getTime();
         try {
             fetchCookies();
-            URL url = new URL("https://www.animenfo.com/radio/index.php?t=" + (new Date()).getTime());
+
+            // TODO: fetch peice by piece
+            URL url = new URL("https://www.animenfo.com/radio/index.php?t=" + currentTime);
             // URL url = new URL("http://192.168.0.2:12345/");
             String body = "{\"ajaxcombine\":true,\"pages\":[{\"uid\":\"nowplaying\",\"page\":\"nowplaying.php\",\"args\":{\"mod\":\"playing\"}}" +
                     ",{\"uid\":\"queue\",\"page\":\"nowplaying.php\",\"args\":{\"mod\":\"queue\"}},{\"uid\":\"recent\",\"page\":\"nowplaying.php\",\"args\":{\"mod\":\"recent\"}}]}";
@@ -123,10 +130,14 @@ public class WebsiteService extends Service {
 
             Document doc = Jsoup.parse(nowPlaying);
 
-            Matcher matcher = nowPlayingPattern1.matcher(doc.select("div .float-container .row .span6").first().text());
+            Elements spans = doc.select("div .float-container .row .span6");
 
-            if (!matcher.find())
-                return false; // wtf
+            Matcher matcher = mainNowPlayingPattern.matcher(spans.first().text());
+
+            if (!matcher.find()) {
+                notifySongUnknown();
+                return; // wtf
+            }
             SongInfo newSongInfo = new SongInfo(
                     matcher.group(1),
                     matcher.group(2),
@@ -136,17 +147,95 @@ public class WebsiteService extends Service {
                     matcher.group(6)
             );
 
-            newSongInfo.setArtUrl(doc.select("div img").first().attr("src"));
+            String artUrl = doc.select("div img").attr("src");
+
+            newSongInfo.setArtUrl(artUrl);
+
+            long songPosTime = Long.valueOf(spans.get(1).select("#np_timer").attr("rel"));
+            currentSongStartTime = currentTime - songPosTime;
+            String songPosTimeStr = spans.get(1).select("#np_timer").text();
+            newSongInfo.setDuration(Integer.valueOf(spans.get(1).select("#np_time").attr("rel")));
+            newSongInfo.setDurationStr(spans.get(1).select("#np_time").text());
+
+            matcher = raitingNowPlayingPattern.matcher(spans.get(1).html());
+
+            if (matcher.find())
+                newSongInfo.setRating(matcher.group(1));
+            else
+                newSongInfo.unsetRating();
+
+            newSongInfo.setFavourites(Integer.valueOf(spans.get(1).select(".favourite-container span[data-favourite-count]").attr("data-favourite-count")));
+
+            newSongInfo.setSongId(Integer.valueOf(spans.get(1).select("a[data-songinfo]").attr("data-songinfo")));
+
+            matcher = nowPlayingBarPattern.matcher(doc.select("#nowPlayingBar").attr("style"));
+            double nowPlayingPos = 0.0;
+            if (matcher.find())
+                nowPlayingPos = Double.valueOf(matcher.group(1));
+
             if (!newSongInfo.equals(currentSong)) {
                 currentSong = newSongInfo;
-                return true;
+                notifySongChanged(songPosTime, songPosTimeStr, nowPlayingPos);
+            } else {
+                notifySongRemained(songPosTime, songPosTimeStr, nowPlayingPos);
             }
+            return;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
+        } finally {
+            currentTime = (new Date()).getTime();
+            if (subscripedPieces.contains(FetchPiece.CURRENT_SONG) &&
+                    (currentSong != null) && (currentSong.getDuration() > 0))
+                handler.postAtTime(new Runnable() {
+                    @Override
+                    public void run() {
+                        fetch(subscripedPieces); // Join requests for all pieces because this is slow request
+                    }
+                }, Math.max(currentTime + 500, Math.min(currentTime + 180000, currentSongStartTime + currentSong.getDuration() + 30)));
         }
-        return false;
+        notifySongUnknown();
+    }
+
+    private void addSubscription(EnumSet<FetchPiece> pieces) {
+        subscripedPieces.addAll(pieces);
+    }
+
+    private void updateSubscription() {
+        subscripedPieces = EnumSet.noneOf(FetchPiece.class);
+        if (!onSongChangeListeners.isEmpty())
+            subscripedPieces.add(FetchPiece.CURRENT_SONG);
+    }
+
+    private void notifySongRemained(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        for (OnSongChangeListener l : onSongChangeListeners) {
+            l.onSongRemained();
+            l.onSongTimingRequested(songPosTime, songPosTimeStr, nowPlayingPos);
+        }
+    }
+
+    private void notifySongChanged(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        for (OnSongChangeListener l : onSongChangeListeners) {
+            l.onSongChanged(currentSong, currentSongStartTime);
+            l.onSongTimingRequested(songPosTime, songPosTimeStr, nowPlayingPos);
+        }
+    }
+
+    private void notifySongUnknown() {
+        for (OnSongChangeListener l : onSongChangeListeners) {
+            l.onSongUnknown();
+        }
+    }
+
+    private void notifyFetchStarted(EnumSet<FetchPiece> pieces) {
+        for (FetchPiece p : pieces) {
+            switch (p) {
+                case CURRENT_SONG:
+                    for (OnSongChangeListener l : onSongChangeListeners)
+                        l.onFetchingStarted();
+            }
+        }
     }
 
     @Override
@@ -162,9 +251,13 @@ public class WebsiteService extends Service {
     public interface OnSongChangeListener {
         void onFetchingStarted();
 
-        void onSongChanged(SongInfo s);
+        void onSongChanged(SongInfo s, long songStartTime);
 
         void onSongRemained();
+
+        void onSongUnknown();
+
+        void onSongTimingRequested(long songPosTime, String songPosTimeStr, double nowPlayingPos);
     }
 
     public class WebsiteBinder extends Binder {
@@ -172,12 +265,12 @@ public class WebsiteService extends Service {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    if (onSongChangeListeners.isEmpty()) {
-                        l.onFetchingStarted();
-                        fetch(EnumSet.of(FetchPiece.CURRENT_SONG));
-                    }
-                    l.onSongChanged(currentSong);
+                    boolean first = onSongChangeListeners.isEmpty();
                     onSongChangeListeners.add(l);
+                    if (first) {
+                        fetch(EnumSet.of(FetchPiece.CURRENT_SONG));
+                    } else
+                        l.onSongChanged(currentSong, currentSongStartTime);
                 }
             });
         }
@@ -187,6 +280,7 @@ public class WebsiteService extends Service {
                 @Override
                 public void run() {
                     onSongChangeListeners.remove(l);
+                    updateSubscription();
                 }
             });
         }

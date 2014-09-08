@@ -26,6 +26,7 @@ public class NowPlaying extends Fragment implements ServiceConnection {
     private TextView seriesView;
     private TextView genreView;
     private ImageView albumArtView;
+    private TextView ratingTextView;
 
     private WebsiteService.WebsiteBinder website;
 
@@ -41,6 +42,7 @@ public class NowPlaying extends Fragment implements ServiceConnection {
         genreView = (TextView) rootView.findViewById(R.id.genreView);
 
         albumArtView = (ImageView) rootView.findViewById(R.id.albumArtView);
+        ratingTextView = (TextView) rootView.findViewById(R.id.ratingTextView);
 
         return rootView;
     }
@@ -67,7 +69,7 @@ public class NowPlaying extends Fragment implements ServiceConnection {
             }
 
             @Override
-            public void onSongChanged(final SongInfo s) {
+            public void onSongChanged(final SongInfo s, final long songStartTime) {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -78,12 +80,25 @@ public class NowPlaying extends Fragment implements ServiceConnection {
                         genreView.setText(s.getGenre());
 
                         albumArtView.setImageBitmap(s.getArtBmp());
+                        ratingTextView.setText("Rating: " + s.getRating() + ". " + s.getFavourites() + " users have added this song to their favourites."
+                                        + " Duration: " + s.getDurationStr() + " id: " + s.getSongId()
+                        );
                     }
                 });
             }
 
             @Override
             public void onSongRemained() {
+
+            }
+
+            @Override
+            public void onSongUnknown() {
+
+            }
+
+            @Override
+            public void onSongTimingRequested(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
 
             }
         });

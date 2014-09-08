@@ -78,7 +78,7 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
             }
 
             @Override
-            public void onSongChanged(final SongInfo s) {
+            public void onSongChanged(final SongInfo s, final long songStartTime) {
                 getActivity().runOnUiThread(
                         new Runnable() {
                             @Override
@@ -91,6 +91,16 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
 
             @Override
             public void onSongRemained() {
+
+            }
+
+            @Override
+            public void onSongUnknown() {
+
+            }
+
+            @Override
+            public void onSongTimingRequested(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
 
             }
         });

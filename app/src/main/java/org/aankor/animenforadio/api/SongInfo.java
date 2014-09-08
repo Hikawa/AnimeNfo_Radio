@@ -17,6 +17,11 @@ public class SongInfo {
     private String albumType = "";
     private String series = "";
     private String genre = "";
+    private int duration = 0;
+    private String durationStr = "";
+    private String rating = "";
+    private int favourites = 0;
+    private int songId;
 
     private String artUrl = "";
     private Bitmap artBmp = null;
@@ -74,6 +79,51 @@ public class SongInfo {
     public Bitmap getArtBmp() {
         return artBmp;
     }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
+    }
+
+    public String getDurationStr() {
+        return durationStr;
+    }
+
+    public void setDurationStr(String durationStr) {
+        this.durationStr = durationStr;
+    }
+
+    public String getRating() {
+        return rating;
+    }
+
+    public void setRating(String rating) {
+        this.rating = rating;
+    }
+
+    public void unsetRating() {
+        this.rating = "N/A";
+    }
+
+    public int getFavourites() {
+        return favourites;
+    }
+
+    public void setFavourites(int favourites) {
+        this.favourites = favourites;
+    }
+
+    public int getSongId() {
+        return songId;
+    }
+
+    public void setSongId(int songId) {
+        this.songId = songId;
+    }
+
 
     @Override
     public boolean equals(Object o) {
