@@ -69,7 +69,7 @@ public class NowPlaying extends Fragment implements ServiceConnection {
             }
 
             @Override
-            public void onSongChanged(final SongInfo s, final long songStartTime) {
+            public void onSongChanged(final SongInfo s, final long songEndTime) {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -79,26 +79,18 @@ public class NowPlaying extends Fragment implements ServiceConnection {
                         seriesView.setText(s.getSeries());
                         genreView.setText(s.getGenre());
 
-                        albumArtView.setImageBitmap(s.getArtBmp());
-                        ratingTextView.setText("Rating: " + s.getRating() + ". " + s.getFavourites() + " users have added this song to their favourites."
-                                        + " Duration: " + s.getDurationStr() + " id: " + s.getSongId()
-                        );
+                        if (s.getArtBmp() != null)
+                            albumArtView.setImageBitmap(s.getArtBmp());
+                        else
+                            albumArtView.setImageResource(R.drawable.example_picture);
+
+                        ratingTextView.setText("Rating: " + s.getRating() + ".\n" + s.getFavourites() + " users have added this song to their favourites.");
                     }
                 });
             }
 
             @Override
-            public void onSongRemained() {
-
-            }
-
-            @Override
             public void onSongUnknown() {
-
-            }
-
-            @Override
-            public void onSongTimingRequested(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
 
             }
         });

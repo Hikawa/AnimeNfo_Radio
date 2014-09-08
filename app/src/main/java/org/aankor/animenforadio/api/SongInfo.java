@@ -71,6 +71,10 @@ public class SongInfo {
         return artBmp;
     }
 
+    public void setArtBmp(Bitmap artBmp) {
+        this.artBmp = artBmp;
+    }
+
     public int getDuration() {
         return duration;
     }
@@ -115,7 +119,6 @@ public class SongInfo {
         this.songId = songId;
     }
 
-
     @Override
     public boolean equals(Object o) {
         SongInfo other = (SongInfo) o;
@@ -132,6 +135,8 @@ public class SongInfo {
 
     public void fetchAlbumArt() {
         try {
+            if (artUrl.isEmpty())
+                return;
             URL url = new URL(artUrl);
             artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
         } catch (MalformedURLException e) {
@@ -139,5 +144,10 @@ public class SongInfo {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void unsetArtUrl() {
+        artUrl = "";
+        artBmp = null;
     }
 }

@@ -1,9 +1,10 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="@dimen/radio_player_height"
     android:layout_gravity="bottom"
-    android:padding="@dimen/radio_player_margin"
+    android:layout_margin="3dp"
+    android:orientation="horizontal"
     tools:context="org.aankor.animenforadio.RadioPlayer">
 
     <ImageView
@@ -16,21 +17,38 @@
         android:id="@+id/playStopButton"
         android:layout_width="@dimen/radio_player_height"
         android:layout_height="@dimen/radio_player_height"
-        android:layout_toRightOf="@id/albumMiniArtView"
         android:background="@drawable/player_play" />
 
-    <TextView
-        android:id="@+id/songNameView"
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_toRightOf="@id/playStopButton"
-        android:text="New text" />
+        android:orientation="vertical">
 
-    <ProgressBar
+        <TextView
+        android:id="@+id/songNameView"
+        android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:text="New text" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ProgressBar
         android:id="@+id/progressView"
         style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/playStopButton" />
-</RelativeLayout>
+                android:layout_alignParentBottom="true" />
+
+            <TextView
+                android:id="@+id/progressTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center|center_vertical"
+                android:text="new text" />
+        </FrameLayout>
+    </LinearLayout>
+</LinearLayout>

@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.aankor.animenforadio.api.SongInfo;
@@ -24,6 +25,9 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
     private boolean isPlaying = false;
     private ImageView albumMiniArtView;
     private TextView songNameView;
+    private ProgressBar progressView;
+    private TextView progressTextView;
+    private SongInfo currentSong;
     private WebsiteService.WebsiteBinder website;
 
 
@@ -40,6 +44,8 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
         final ImageButton playStopButton = (ImageButton) rootView.findViewById(R.id.playStopButton);
         albumMiniArtView = (ImageView) rootView.findViewById(R.id.albumMiniArtView);
         songNameView = (TextView) rootView.findViewById(R.id.songNameView);
+        progressView = (ProgressBar) rootView.findViewById(R.id.progressView);
+        progressTextView = (TextView) rootView.findViewById(R.id.progressTextView);
         playStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -71,6 +77,18 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         website = (WebsiteService.WebsiteBinder) iBinder;
+        website.addOnSongPosChangeListener(new WebsiteService.OnSongPosChangedListener() {
+            @Override
+            public void onSongPosChanged(final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressView.setProgress((int) nowPlayingPos);
+                        progressTextView.setText(songPosTimeStr + " / " + currentSong.getDurationStr());
+                    }
+                });
+            }
+        });
         website.addOnSongChangeListener(new WebsiteService.OnSongChangeListener() {
             @Override
             public void onFetchingStarted() {
@@ -78,29 +96,23 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
             }
 
             @Override
-            public void onSongChanged(final SongInfo s, final long songStartTime) {
+            public void onSongChanged(final SongInfo s, final long songEndTime) {
+                currentSong = s;
                 getActivity().runOnUiThread(
                         new Runnable() {
                             @Override
                             public void run() {
-                                albumMiniArtView.setImageBitmap(s.getArtBmp());
+                                if (s.getArtBmp() != null)
+                                    albumMiniArtView.setImageBitmap(s.getArtBmp());
+                                else
+                                    albumMiniArtView.setImageResource(R.drawable.example_picture);
                                 songNameView.setText(s.getArtist() + " - " + s.getTitle());
                             }
                         });
             }
 
             @Override
-            public void onSongRemained() {
-
-            }
-
-            @Override
             public void onSongUnknown() {
-
-            }
-
-            @Override
-            public void onSongTimingRequested(long songPosTime, String songPosTimeStr, double nowPlayingPos) {
 
             }
         });
