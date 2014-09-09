@@ -325,17 +325,18 @@ public class WebsiteService extends Service {
 
     public class WebsiteBinder extends Binder {
         public void addOnSongChangeListener(final OnSongChangeListener l) {
+            boolean first;
+            synchronized (onSongChangeListeners) {
+                first = onSongChangeListeners.isEmpty();
+                onSongChangeListeners.add(l);
+            }
+            final boolean wasFirst = first;
             scheduler.execute(new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (onSongChangeListeners) {
-                        boolean first = onSongChangeListeners.isEmpty();
-                        onSongChangeListeners.add(l);
-                        if (first) {
-                            refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
-                        }
-                    }
-                    if (currentSong != null)
+                    if (wasFirst) {
+                        refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
+                    } else if (currentSong != null)
                         l.onSongChanged(currentSong, currentSongEndTime, currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
                 }
             });
