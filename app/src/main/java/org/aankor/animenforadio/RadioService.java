@@ -21,7 +21,7 @@ public class RadioService extends Service {
 
     @Override
     public void onCreate() {
-        notification = new RadioNotification(getApplicationContext());
+        notification = new RadioNotification(this);
         playerStateReceiver = new PlayerStateReceiver(getApplicationContext()) {
             @Override
             public void onStop(Context context) {

@@ -1,13 +1,12 @@
 package org.aankor.animenforadio;
 
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
 import android.os.IBinder;
 import android.widget.RemoteViews;
 
@@ -27,14 +26,16 @@ public class RadioNotification implements
      */
     private static final String NOTIFICATION_TAG = "AnfoRadio";
     private final Context context;
+    private final Service service;
     private Notification.Builder builder;
     private WebsiteService.WebsiteBinder website;
     private int lastPos;
     private RemoteViews views;
     private SongInfo currentSong;
 
-    public RadioNotification(final Context context) {
-        this.context = context;
+    public RadioNotification(final Service s) {
+        this.service = s;
+        this.context = s.getApplicationContext();
         Intent main = new Intent(context, Main.class);
         main.putExtra("isPlaying", true);
         main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -65,23 +66,11 @@ public class RadioNotification implements
     }
 
     private void show(final Notification notification) {
-        final NotificationManager nm = (NotificationManager) context
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
-            nm.notify(NOTIFICATION_TAG, 0, notification);
-        } else {
-            nm.notify(NOTIFICATION_TAG.hashCode(), notification);
-        }
+        service.startForeground(NOTIFICATION_TAG.hashCode(), notification);
     }
 
     public void cancel() {
-        final NotificationManager nm = (NotificationManager) context
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
-            nm.cancel(NOTIFICATION_TAG, 0);
-        } else {
-            nm.cancel(NOTIFICATION_TAG.hashCode());
-        }
+        service.stopForeground(true);
     }
 
     void updateSong(SongInfo s, long songEndTime) {
