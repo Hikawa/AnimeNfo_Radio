@@ -43,6 +43,8 @@ public class RadioPlayer extends Fragment implements
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Intent main = getActivity().getIntent();
+        isPlaying = main.getBooleanExtra("isPlaying", false);
         // Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.radio_player, container, false);
         final ImageButton playStopButton = (ImageButton) rootView.findViewById(R.id.playStopButton);
@@ -50,6 +52,7 @@ public class RadioPlayer extends Fragment implements
         songNameView = (TextView) rootView.findViewById(R.id.songNameView);
         progressView = (ProgressBar) rootView.findViewById(R.id.progressView);
         progressTextView = (TextView) rootView.findViewById(R.id.progressTextView);
+        playStopButton.setBackgroundResource(isPlaying ? R.drawable.player_stop : R.drawable.player_play);
         playStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

@@ -33,7 +33,11 @@ public class RadioNotification implements
 
     public RadioNotification(final Context context) {
         this.context = context;
+        Intent main = new Intent(context, Main.class);
+        main.putExtra("isPlaying", true);
+        main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         builder = new Notification.Builder(context)
+                .setContentIntent(PendingIntent.getActivity(context, 0, main, 0))
                 .setContentTitle("AnimeNfo Radio")
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setTicker("AnimeNfo Radio Player")
