@@ -1,143 +1,66 @@
 package org.aankor.animenforadio;
 
-import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
+import android.content.ServiceConnection;
 import android.os.Build;
-import android.support.v4.app.NotificationCompat;
+import android.os.IBinder;
+
+import org.aankor.animenforadio.api.SongInfo;
 
 
 /**
  * Helper class for showing and canceling radio
  * notifications.
- * <p>
- * This class makes heavy use of the {@link NotificationCompat.Builder} helper
- * class to create notifications in a backward-compatible way.
  */
-public class RadioNotification {
+public class RadioNotification implements
+        ServiceConnection,
+        WebsiteService.OnSongPosChangedListener,
+        WebsiteService.OnSongChangeListener {
     /**
      * The unique identifier for this type of notification.
      */
     private static final String NOTIFICATION_TAG = "AnfoRadio";
+    private final Context context;
+    private Notification.Builder builder;
+    private WebsiteService.WebsiteBinder website;
+    private volatile boolean isStarted;
+    private int lastPos;
 
-    /**
-     * Shows the notification, or updates a previously shown notification of
-     * this type, with the given parameters.
-     * <p>
-     * TODO: Customize this method's arguments to present relevant content in
-     * the notification.
-     * <p>
-     * TODO: Customize the contents of this method to tweak the behavior and
-     * presentation of radio notifications. Make
-     * sure to follow the
-     * <a href="https://developer.android.com/design/patterns/notifications.html">
-     * Notification design guidelines</a> when doing so.
-     *
-     * @see #cancel(Context)
-     */
-    public static void notify(final Context context) {
-        final Resources res = context.getResources();
-
-        // This image is used as the notification's large icon (thumbnail).
-        // TODO: Remove this if your notification has no relevant thumbnail.
-        final Bitmap picture = BitmapFactory.decodeResource(res, R.drawable.example_picture);
-
-
-        final String ticker = "Test";
-        final String title = res.getString(
-                R.string.radio_notification_title_template, ticker);
-        final String text = res.getString(
-                R.string.radio_notification_placeholder_text_template, ticker);
-
-        final NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-
-                // Set appropriate defaults for the notification light, sound,
-                // and vibration.
-                .setDefaults(Notification.DEFAULT_ALL)
-
-                // Set required fields, including the small icon, the
-                // notification title, and text.
-                .setSmallIcon(R.drawable.ic_stat_radio)
-                .setContentTitle(title)
-                .setContentText(text)
-
-                // All fields below this line are optional.
-
-                // Use a default priority (recognized on devices running Android
-                // 4.1 or later)
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-
-                // Provide a large icon, shown with the notification in the
-                // notification drawer on devices running Android 3.0 or later.
-                .setLargeIcon(picture)
-
-                // Set ticker text (preview) information for this notification.
-                .setTicker(ticker)
-
-                // Show a number. This is useful when stacking notifications of
-                // a single type.
-                .setNumber(1)
-
-                // If this notification relates to a past or upcoming event, you
-                // should set the relevant time information using the setWhen
-                // method below. If this call is omitted, the notification's
-                // timestamp will by set to the time at which it was shown.
-                // TODO: Call setWhen if this notification relates to a past or
-                // upcoming event. The sole argument to this method should be
-                // the notification timestamp in milliseconds.
-                //.setWhen(...)
-
-                // Set the pending intent to be initiated when the user touches
-                // the notification.
-                .setContentIntent(
-                        PendingIntent.getActivity(
-                                context,
-                                0,
-                                new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.google.com")),
-                                PendingIntent.FLAG_UPDATE_CURRENT))
-
-                // Show expanded text content on devices running Android 4.1 or
-                // later.
-                .setStyle(new NotificationCompat.BigTextStyle()
-                        .bigText(text)
-                        .setBigContentTitle(title)
-                        .setSummaryText("Dummy summary text"))
-
-                // Example additional actions for this notification. These will
-                // only show on devices running Android 4.1 or later, so you
-                // should ensure that the activity in this notification's
-                // content intent provides access to the same actions in
-                // another way.
-                .addAction(
-                        R.drawable.ic_action_stat_share,
-                        res.getString(R.string.action_share),
-                        PendingIntent.getActivity(
-                                context,
-                                0,
-                                Intent.createChooser(new Intent(Intent.ACTION_SEND)
-                                        .setType("text/plain")
-                                        .putExtra(Intent.EXTRA_TEXT, "Dummy text"), "Dummy title"),
-                                PendingIntent.FLAG_UPDATE_CURRENT))
-                .addAction(
-                        R.drawable.ic_action_stat_reply,
-                        res.getString(R.string.action_reply),
-                        null)
-
-                // Automatically dismiss the notification when it is touched.
-                .setAutoCancel(true);
-
-        notify(context, builder.build());
+    public RadioNotification(final Context context) {
+        this.context = context;
+        builder = new Notification.Builder(context)
+                .setContentTitle("AnimeNfo Radio")
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setTicker("AnimeNfo Radio Player")
+                .setOngoing(true)
+                .addAction(R.drawable.player_stop, null,
+                        PendingIntent.getBroadcast(context, 0, new Intent(PlayerStateReceiver.KEY_STOP), 0));
     }
 
-    @TargetApi(Build.VERSION_CODES.ECLAIR)
-    private static void notify(final Context context, final Notification notification) {
+    public void start() {
+        isStarted = true;
+        lastPos = -200;
+        context.bindService(new Intent(context, WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+    }
+
+    public void stop() {
+        isStarted = false;
+        website.removeOnSongPosChangeListener(this);
+        website.removeOnSongChangeListener(this);
+        context.unbindService(this);
+        website = null;
+        cancel();
+    }
+
+    private void show(final Notification notification) {
+        // if there will be updates after stopping process is started
+        if (!isStarted)
+            return;
         final NotificationManager nm = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
@@ -147,12 +70,7 @@ public class RadioNotification {
         }
     }
 
-    /**
-     * Cancels any notifications of this type previously shown using
-     * {@link #notify(Context)}.
-     */
-    @TargetApi(Build.VERSION_CODES.ECLAIR)
-    public static void cancel(final Context context) {
+    public void cancel() {
         final NotificationManager nm = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
@@ -160,5 +78,53 @@ public class RadioNotification {
         } else {
             nm.cancel(NOTIFICATION_TAG.hashCode());
         }
+    }
+
+    void updateSong(SongInfo s, long songEndTime) {
+        builder = builder.setContentText(s.getArtist() + " - " + s.getTitle())
+                .setLargeIcon(s.getArtBmp());
+    }
+
+    void updateTiming(int songPosTime, String songPosTimeStr, int pos) {
+        builder = builder.setProgress(100, pos, false);
+    }
+
+    @Override
+    public void onSongPosChanged(int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        int pos = (int) nowPlayingPos;
+        if (pos == lastPos)
+            return; // don't notify if nothing is changed
+        updateTiming(songPosTime, songPosTimeStr, pos);
+        show(builder.build());
+    }
+
+    @Override
+    public void onFetchingStarted() {
+
+    }
+
+    @Override
+    public void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        updateSong(s, songEndTime);
+        updateTiming(songPosTime, songPosTimeStr, lastPos = (int) nowPlayingPos);
+        show(builder.build());
+    }
+
+    @Override
+    public void onSongUnknown() {
+
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        website = (WebsiteService.WebsiteBinder) iBinder;
+        website.addOnSongPosChangeListener(this);
+        website.addOnSongChangeListener(this);
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        website = null;
+        cancel();
     }
 }

@@ -18,7 +18,7 @@ import org.aankor.animenforadio.api.SongInfo;
 /**
  *
  */
-public class NowPlaying extends Fragment implements ServiceConnection {
+public class NowPlaying extends Fragment implements ServiceConnection, WebsiteService.OnSongChangeListener {
     private TextView artistView;
     private TextView titleView;
     private TextView albumView;
@@ -56,44 +56,49 @@ public class NowPlaying extends Fragment implements ServiceConnection {
     @Override
     public void onStop() {
         super.onStop();
+        website.removeOnSongChangeListener(this);
         getActivity().unbindService(this);
     }
+
+    void updateSong(final SongInfo s, final long songEndTime) {
+        artistView.setText(s.getArtist());
+        titleView.setText(s.getTitle());
+        albumView.setText(s.getAlbum() + " (" + s.getAlbumType() + ")");
+        seriesView.setText(s.getSeries());
+        genreView.setText(s.getGenre());
+
+        if (s.getArtBmp() != null)
+            albumArtView.setImageBitmap(s.getArtBmp());
+        else
+            albumArtView.setImageResource(R.drawable.example_picture);
+
+        ratingTextView.setText("Rating: " + s.getRating() + ".\n" + s.getFavourites() + " users have added this song to their favourites.");
+    }
+    @Override
+    public void onFetchingStarted() {
+
+    }
+
+    @Override
+    public void onSongChanged(final SongInfo s, final long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateSong(s, songEndTime);
+            }
+        });
+    }
+
+    @Override
+    public void onSongUnknown() {
+
+    }
+
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongChangeListener(new WebsiteService.OnSongChangeListener() {
-            @Override
-            public void onFetchingStarted() {
-
-            }
-
-            @Override
-            public void onSongChanged(final SongInfo s, final long songEndTime) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        artistView.setText(s.getArtist());
-                        titleView.setText(s.getTitle());
-                        albumView.setText(s.getAlbum() + " (" + s.getAlbumType() + ")");
-                        seriesView.setText(s.getSeries());
-                        genreView.setText(s.getGenre());
-
-                        if (s.getArtBmp() != null)
-                            albumArtView.setImageBitmap(s.getArtBmp());
-                        else
-                            albumArtView.setImageResource(R.drawable.example_picture);
-
-                        ratingTextView.setText("Rating: " + s.getRating() + ".\n" + s.getFavourites() + " users have added this song to their favourites.");
-                    }
-                });
-            }
-
-            @Override
-            public void onSongUnknown() {
-
-            }
-        });
+        website.addOnSongChangeListener(this);
     }
 
     @Override

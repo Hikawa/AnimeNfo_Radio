@@ -158,7 +158,7 @@ public class WebsiteService extends Service {
         else
             newSongInfo.setArtBmp(currentSong.getArtBmp());
         currentSong = newSongInfo;
-        notifySongChanged();
+        notifySongChanged(songPosTime, songPosTimeStr, nowPlayingPos);
         currentSongPos = new SongPos(songPosTime, songPosTimeStr, nowPlayingPos);
         currentTime = (new Date()).getTime();
         refreshSchedule.put(Subscription.CURRENT_SONG, Math.max(currentTime + 5000, Math.min(currentSongEndTime + 30, currentTime + 180000)));
@@ -244,9 +244,9 @@ public class WebsiteService extends Service {
             subscripedPieces.add(Subscription.CURRENT_SONG);
     }
 
-    private void notifySongChanged() {
+    private void notifySongChanged(int songPosTime, String songPosTimeStr, double nowPlayingPos) {
         for (OnSongChangeListener l : onSongChangeListeners) {
-            l.onSongChanged(currentSong, currentSongEndTime);
+            l.onSongChanged(currentSong, currentSongEndTime, songPosTime, songPosTimeStr, nowPlayingPos);
         }
         fetchingCompletionNotified = true;
     }
@@ -282,7 +282,7 @@ public class WebsiteService extends Service {
     public interface OnSongChangeListener {
         void onFetchingStarted();
 
-        void onSongChanged(SongInfo s, long songEndTime);
+        void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos);
 
         // void onSongRemained();
 
@@ -323,7 +323,7 @@ public class WebsiteService extends Service {
                     if (first) {
                         refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
                     } else if (currentSong != null)
-                        l.onSongChanged(currentSong, currentSongEndTime);
+                        l.onSongChanged(currentSong, currentSongEndTime, currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
                 }
             });
             activateScheduler();
@@ -344,8 +344,6 @@ public class WebsiteService extends Service {
                 @Override
                 public void run() {
                     onSongPosChangedListeners.add(l);
-                    if (currentSongPos != null)
-                        l.onSongPosChanged(currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
                 }
             });
         }

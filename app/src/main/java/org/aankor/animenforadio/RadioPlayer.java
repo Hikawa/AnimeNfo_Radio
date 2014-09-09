@@ -21,7 +21,11 @@ import org.aankor.animenforadio.api.SongInfo;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class RadioPlayer extends Fragment implements ServiceConnection {
+public class RadioPlayer extends Fragment implements
+        ServiceConnection,
+        WebsiteService.OnSongPosChangedListener,
+        WebsiteService.OnSongChangeListener {
+    PlayerStateReceiver playerStateReceiver;
     private boolean isPlaying = false;
     private ImageView albumMiniArtView;
     private TextView songNameView;
@@ -55,11 +59,23 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
                     getActivity().startService(new Intent(getActivity(), RadioService.class));
                 } else {
                     getActivity().stopService(new Intent(getActivity(), RadioService.class));
-                    RadioNotification.cancel(getActivity());
                 }
             }
         });
+        playerStateReceiver = new PlayerStateReceiver(getActivity()) {
+            @Override
+            public void onStop(Context context) {
+                isPlaying = false;
+                playStopButton.setBackgroundResource(R.drawable.player_play);
+            }
+        };
         return rootView;
+    }
+
+    @Override
+    public void onDestroyView() {
+        playerStateReceiver.unregister(getActivity());
+        super.onDestroyView();
     }
 
     @Override
@@ -71,51 +87,63 @@ public class RadioPlayer extends Fragment implements ServiceConnection {
     @Override
     public void onStop() {
         super.onStop();
+        website.addOnSongPosChangeListener(this);
+        website.addOnSongChangeListener(this);
         getActivity().unbindService(this);
+    }
+
+    private void updateSong(final SongInfo s, final long songEndTime) {
+        if (s.getArtBmp() != null)
+            albumMiniArtView.setImageBitmap(s.getArtBmp());
+        else
+            albumMiniArtView.setImageResource(R.drawable.example_picture);
+        songNameView.setText(s.getArtist() + " - " + s.getTitle());
+    }
+
+    private void updateTiming(final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
+        progressView.setProgress((int) nowPlayingPos);
+        progressTextView.setText(songPosTimeStr + " / " + currentSong.getDurationStr());
+    }
+
+    @Override
+    public void onSongPosChanged(final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateTiming(songPosTime, songPosTimeStr, nowPlayingPos);
+            }
+        });
+    }
+
+    @Override
+    public void onFetchingStarted() {
+
+    }
+
+    @Override
+    public void onSongChanged(final SongInfo s, final long songEndTime,
+                              final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
+        currentSong = s;
+        getActivity().runOnUiThread(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        updateSong(s, songEndTime);
+                        updateTiming(songPosTime, songPosTimeStr, nowPlayingPos);
+                    }
+                });
+    }
+
+    @Override
+    public void onSongUnknown() {
+
     }
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongPosChangeListener(new WebsiteService.OnSongPosChangedListener() {
-            @Override
-            public void onSongPosChanged(final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        progressView.setProgress((int) nowPlayingPos);
-                        progressTextView.setText(songPosTimeStr + " / " + currentSong.getDurationStr());
-                    }
-                });
-            }
-        });
-        website.addOnSongChangeListener(new WebsiteService.OnSongChangeListener() {
-            @Override
-            public void onFetchingStarted() {
-
-            }
-
-            @Override
-            public void onSongChanged(final SongInfo s, final long songEndTime) {
-                currentSong = s;
-                getActivity().runOnUiThread(
-                        new Runnable() {
-                            @Override
-                            public void run() {
-                                if (s.getArtBmp() != null)
-                                    albumMiniArtView.setImageBitmap(s.getArtBmp());
-                                else
-                                    albumMiniArtView.setImageResource(R.drawable.example_picture);
-                                songNameView.setText(s.getArtist() + " - " + s.getTitle());
-                            }
-                        });
-            }
-
-            @Override
-            public void onSongUnknown() {
-
-            }
-        });
+        website.addOnSongPosChangeListener(this);
+        website.addOnSongChangeListener(this);
     }
 
     @Override
