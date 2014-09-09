@@ -1,8 +1,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/radio_player_height"
-    android:layout_gravity="bottom"
+    android:layout_height="match_parent"
     android:layout_margin="3dp"
     android:orientation="horizontal"
     tools:context="org.aankor.animenforadio.RadioPlayer">
@@ -19,7 +18,7 @@
         android:id="@+id/playStopButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/player_play" />
+        android:background="@drawable/player_stop" />
 
 
     <LinearLayout
@@ -28,8 +27,8 @@
         android:orientation="vertical">
 
         <TextView
-        android:id="@+id/songNameView"
-        android:layout_width="match_parent"
+            android:id="@+id/songNameView"
+            android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:text="New text" />
@@ -39,10 +38,10 @@
             android:layout_height="wrap_content">
 
             <ProgressBar
-        android:id="@+id/progressView"
-        style="@android:style/Widget.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+                android:id="@+id/progressView"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true" />
 
             <TextView

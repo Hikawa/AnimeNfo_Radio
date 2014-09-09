@@ -158,8 +158,8 @@ public class WebsiteService extends Service {
         else
             newSongInfo.setArtBmp(currentSong.getArtBmp());
         currentSong = newSongInfo;
-        notifySongChanged(songPosTime, songPosTimeStr, nowPlayingPos);
         currentSongPos = new SongPos(songPosTime, songPosTimeStr, nowPlayingPos);
+        notifySongChanged();
         currentTime = (new Date()).getTime();
         refreshSchedule.put(Subscription.CURRENT_SONG, Math.max(currentTime + 5000, Math.min(currentSongEndTime + 30, currentTime + 180000)));
         return true;
@@ -244,9 +244,10 @@ public class WebsiteService extends Service {
             subscripedPieces.add(Subscription.CURRENT_SONG);
     }
 
-    private void notifySongChanged(int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+    private void notifySongChanged() {
         for (OnSongChangeListener l : onSongChangeListeners) {
-            l.onSongChanged(currentSong, currentSongEndTime, songPosTime, songPosTimeStr, nowPlayingPos);
+            l.onSongChanged(currentSong, currentSongEndTime,
+                    currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
         }
         fetchingCompletionNotified = true;
     }
@@ -302,6 +303,7 @@ public class WebsiteService extends Service {
             this.time = time;
             this.timeStr = timeStr;
             this.percent = percent;
+            fix();
         }
 
         public void estimate(long currentSongEndTime, int currentSongDuration) {
@@ -310,6 +312,18 @@ public class WebsiteService extends Service {
             final int secs = (time % 60);
             timeStr = (time / 60) + ":" + ((secs < 10) ? "0" : "") + secs;
             percent = (100.0 * (currentSongDuration - time)) / currentSongDuration;
+            fix();
+        }
+
+        private void fix() {
+            if (time < 0) {
+                time = 0;
+                timeStr = "0:00";
+            }
+            if (percent < 0)
+                percent = 0;
+            else if (percent > 100)
+                percent = 100;
         }
     }
 

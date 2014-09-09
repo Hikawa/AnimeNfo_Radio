@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.IBinder;
+import android.widget.RemoteViews;
 
 import org.aankor.animenforadio.api.SongInfo;
 
@@ -30,20 +31,25 @@ public class RadioNotification implements
     private WebsiteService.WebsiteBinder website;
     private volatile boolean isStarted;
     private int lastPos;
+    private RemoteViews views;
+    private SongInfo cuurentSong;
 
     public RadioNotification(final Context context) {
         this.context = context;
         Intent main = new Intent(context, Main.class);
         main.putExtra("isPlaying", true);
         main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
+        views.setOnClickPendingIntent(R.id.playStopButton,
+                PendingIntent.getBroadcast(context, 0, new Intent(PlayerStateReceiver.KEY_STOP), 0));
+
         builder = new Notification.Builder(context)
+                .setContent(views)
                 .setContentIntent(PendingIntent.getActivity(context, 0, main, 0))
-                .setContentTitle("AnimeNfo Radio")
-                .setSmallIcon(R.drawable.ic_launcher)
                 .setTicker("AnimeNfo Radio Player")
-                .setOngoing(true)
-                .addAction(R.drawable.player_stop, null,
-                        PendingIntent.getBroadcast(context, 0, new Intent(PlayerStateReceiver.KEY_STOP), 0));
+                .setSmallIcon(R.drawable.ic_launcher)
+                .setOngoing(true);
     }
 
     public void start() {
@@ -85,12 +91,13 @@ public class RadioNotification implements
     }
 
     void updateSong(SongInfo s, long songEndTime) {
-        builder = builder.setContentText(s.getArtist() + " - " + s.getTitle())
-                .setLargeIcon(s.getArtBmp());
+        views.setTextViewText(R.id.songNameView, s.getArtist() + " - " + s.getTitle());
+        views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
     }
 
     void updateTiming(int songPosTime, String songPosTimeStr, int pos) {
-        builder = builder.setProgress(100, pos, false);
+        views.setProgressBar(R.id.progressView, 100, pos, false);
+        views.setTextViewText(R.id.progressTextView, songPosTimeStr + " / " + cuurentSong.getDurationStr());
     }
 
     @Override
@@ -109,6 +116,7 @@ public class RadioNotification implements
 
     @Override
     public void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+        cuurentSong = s;
         updateSong(s, songEndTime);
         updateTiming(songPosTime, songPosTimeStr, lastPos = (int) nowPlayingPos);
         show(builder.build());

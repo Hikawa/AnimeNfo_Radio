@@ -103,7 +103,7 @@ public class RadioPlayer extends Fragment implements
         songNameView.setText(s.getArtist() + " - " + s.getTitle());
     }
 
-    private void updateTiming(final int songPosTime, final String songPosTimeStr, final double nowPlayingPos) {
+    private void updateTiming(int songPosTime, String songPosTimeStr, double nowPlayingPos) {
         progressView.setProgress((int) nowPlayingPos);
         progressTextView.setText(songPosTimeStr + " / " + currentSong.getDurationStr());
     }
