@@ -29,10 +29,9 @@ public class RadioNotification implements
     private final Context context;
     private Notification.Builder builder;
     private WebsiteService.WebsiteBinder website;
-    private volatile boolean isStarted;
     private int lastPos;
     private RemoteViews views;
-    private SongInfo cuurentSong;
+    private SongInfo currentSong;
 
     public RadioNotification(final Context context) {
         this.context = context;
@@ -53,13 +52,11 @@ public class RadioNotification implements
     }
 
     public void start() {
-        isStarted = true;
         lastPos = -200;
         context.bindService(new Intent(context, WebsiteService.class), this, Context.BIND_AUTO_CREATE);
     }
 
     public void stop() {
-        isStarted = false;
         website.removeOnSongPosChangeListener(this);
         website.removeOnSongChangeListener(this);
         context.unbindService(this);
@@ -68,9 +65,6 @@ public class RadioNotification implements
     }
 
     private void show(final Notification notification) {
-        // if there will be updates after stopping process is started
-        if (!isStarted)
-            return;
         final NotificationManager nm = (NotificationManager) context
                 .getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ECLAIR) {
@@ -97,7 +91,7 @@ public class RadioNotification implements
 
     void updateTiming(int songPosTime, String songPosTimeStr, int pos) {
         views.setProgressBar(R.id.progressView, 100, pos, false);
-        views.setTextViewText(R.id.progressTextView, songPosTimeStr + " / " + cuurentSong.getDurationStr());
+        views.setTextViewText(R.id.progressTextView, songPosTimeStr + " / " + currentSong.getDurationStr());
     }
 
     @Override
@@ -116,7 +110,7 @@ public class RadioNotification implements
 
     @Override
     public void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
-        cuurentSong = s;
+        currentSong = s;
         updateSong(s, songEndTime);
         updateTiming(songPosTime, songPosTimeStr, lastPos = (int) nowPlayingPos);
         show(builder.build());
@@ -137,6 +131,5 @@ public class RadioNotification implements
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
         website = null;
-        cancel();
     }
 }

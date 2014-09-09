@@ -90,8 +90,8 @@ public class RadioPlayer extends Fragment implements
     @Override
     public void onStop() {
         super.onStop();
-        website.addOnSongPosChangeListener(this);
-        website.addOnSongChangeListener(this);
+        website.removeOnSongPosChangeListener(this);
+        website.removeOnSongChangeListener(this);
         getActivity().unbindService(this);
     }
 

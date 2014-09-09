@@ -43,7 +43,6 @@ public class WebsiteService extends Service {
     boolean fetchingCompletionNotified;
     SongPos currentSongPos = null;
     ScheduledFuture processorHandle = null;
-    EnumSet<Subscription> subscripedPieces = EnumSet.noneOf(Subscription.class);
     SortedMap<Subscription, Long> refreshSchedule = new TreeMap<Subscription, Long>();
     private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
@@ -76,8 +75,10 @@ public class WebsiteService extends Service {
         }
         fetch(fetchNow);
         if (currentSongPos != null)
-            for (OnSongPosChangedListener l : onSongPosChangedListeners)
-                l.onSongPosChanged(currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
+            synchronized (onSongPosChangedListeners) {
+                for (OnSongPosChangedListener l : onSongPosChangedListeners)
+                    l.onSongPosChanged(currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
+            }
     }
 
     @Override
@@ -210,7 +211,6 @@ public class WebsiteService extends Service {
     private void fetch(EnumSet<Subscription> subscriptions) {
         boolean currentSongPosUpdated = false;
         if (!subscriptions.isEmpty()) {
-            addSubscription(subscriptions);
             notifyFetchStarted(subscriptions);
             try {
                 JSONObject res = request(subscriptions);
@@ -234,27 +234,21 @@ public class WebsiteService extends Service {
         }
     }
 
-    private void addSubscription(EnumSet<Subscription> subscriptions) {
-        subscripedPieces.addAll(subscriptions);
-    }
-
-    private void updateSubscription() {
-        subscripedPieces = EnumSet.noneOf(Subscription.class);
-        if (!onSongChangeListeners.isEmpty())
-            subscripedPieces.add(Subscription.CURRENT_SONG);
-    }
-
     private void notifySongChanged() {
-        for (OnSongChangeListener l : onSongChangeListeners) {
-            l.onSongChanged(currentSong, currentSongEndTime,
-                    currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
+        synchronized (onSongChangeListeners) {
+            for (OnSongChangeListener l : onSongChangeListeners) {
+                l.onSongChanged(currentSong, currentSongEndTime,
+                        currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
+            }
         }
         fetchingCompletionNotified = true;
     }
 
     private void notifySongUnknown() {
-        for (OnSongChangeListener l : onSongChangeListeners) {
-            l.onSongUnknown();
+        synchronized (onSongChangeListeners) {
+            for (OnSongChangeListener l : onSongChangeListeners) {
+                l.onSongUnknown();
+            }
         }
         fetchingCompletionNotified = true;
     }
@@ -263,8 +257,10 @@ public class WebsiteService extends Service {
         for (Subscription s : subscriptions) {
             switch (s) {
                 case CURRENT_SONG:
-                    for (OnSongChangeListener l : onSongChangeListeners)
-                        l.onFetchingStarted();
+                    synchronized (onSongChangeListeners) {
+                        for (OnSongChangeListener l : onSongChangeListeners)
+                            l.onFetchingStarted();
+                    }
             }
         }
         fetchingCompletionNotified = false;
@@ -332,11 +328,14 @@ public class WebsiteService extends Service {
             scheduler.execute(new Runnable() {
                 @Override
                 public void run() {
-                    boolean first = onSongChangeListeners.isEmpty();
-                    onSongChangeListeners.add(l);
-                    if (first) {
-                        refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
-                    } else if (currentSong != null)
+                    synchronized (onSongChangeListeners) {
+                        boolean first = onSongChangeListeners.isEmpty();
+                        onSongChangeListeners.add(l);
+                        if (first) {
+                            refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
+                        }
+                    }
+                    if (currentSong != null)
                         l.onSongChanged(currentSong, currentSongEndTime, currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
                 }
             });
@@ -344,31 +343,21 @@ public class WebsiteService extends Service {
         }
 
         public void removeOnSongChangeListener(final OnSongChangeListener l) {
-            scheduler.execute(new Runnable() {
-                @Override
-                public void run() {
-                    onSongChangeListeners.remove(l);
-                    updateSubscription();
-                }
-            });
+            synchronized (onSongChangeListeners) {
+                onSongChangeListeners.remove(l);
+            }
         }
 
         public void addOnSongPosChangeListener(final OnSongPosChangedListener l) {
-            scheduler.execute(new Runnable() {
-                @Override
-                public void run() {
-                    onSongPosChangedListeners.add(l);
-                }
-            });
+            synchronized (onSongPosChangedListeners) {
+                onSongPosChangedListeners.add(l);
+            }
         }
 
         public void removeOnSongPosChangeListener(final OnSongPosChangedListener l) {
-            scheduler.execute(new Runnable() {
-                @Override
-                public void run() {
-                    onSongPosChangedListeners.remove(l);
-                }
-            });
+            synchronized (onSongPosChangedListeners) {
+                onSongPosChangedListeners.remove(l);
+            }
         }
     }
 }
