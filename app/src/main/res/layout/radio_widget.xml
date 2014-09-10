@@ -1,0 +1,46 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="3dp"
+    android:orientation="horizontal"
+    android:padding="@dimen/widget_margin"
+    tools:context="org.aankor.animenforadio.RadioWidget">
+
+    <ImageView
+        android:id="@+id/albumMiniArtView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:contentDescription="Album Art"
+        android:src="@drawable/example_picture" />
+
+    <ImageButton
+        android:id="@+id/playStopButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/player_stop" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/titleView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Large Text"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        <TextView
+            android:id="@+id/artistView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:text="New text" />
+
+    </LinearLayout>
+</LinearLayout>

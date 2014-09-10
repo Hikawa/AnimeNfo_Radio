@@ -22,12 +22,12 @@ public class RadioService extends Service {
     @Override
     public void onCreate() {
         notification = new RadioNotification(this);
-        playerStateReceiver = new PlayerStateReceiver(getApplicationContext()) {
+        playerStateReceiver = new PlayerStateReceiver(getApplicationContext(), new PlayerStateReceiver.Listener() {
             @Override
             public void onStop(Context context) {
                 RadioService.this.stopSelf();
             }
-        };
+        });
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {

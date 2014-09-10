@@ -5,11 +5,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 
-public abstract class PlayerStateReceiver extends BroadcastReceiver {
+public class PlayerStateReceiver extends BroadcastReceiver {
     public static final String KEY_STOP = "org.aankor.animenforadio.RadioService.stopRadio";
+    private Listener listener;
 
-    public PlayerStateReceiver(Context context) {
+    public PlayerStateReceiver() {
+
+    }
+
+    public PlayerStateReceiver(Context context, Listener listener) {
+        this.listener = listener;
         register(context);
+    }
+
+    public void setListener(Listener listener) {
+        this.listener = listener;
     }
 
     public void register(Context context) {
@@ -25,9 +35,11 @@ public abstract class PlayerStateReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(PlayerStateReceiver.KEY_STOP)) {
-            onStop(context);
+            listener.onStop(context);
         }
     }
 
-    public abstract void onStop(Context context);
+    public interface Listener {
+        void onStop(Context context);
+    }
 }

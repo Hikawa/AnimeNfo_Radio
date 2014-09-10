@@ -65,13 +65,13 @@ public class RadioPlayer extends Fragment implements
                 }
             }
         });
-        playerStateReceiver = new PlayerStateReceiver(getActivity()) {
+        playerStateReceiver = new PlayerStateReceiver(getActivity(), new PlayerStateReceiver.Listener() {
             @Override
             public void onStop(Context context) {
                 isPlaying = false;
                 playStopButton.setBackgroundResource(R.drawable.player_play);
             }
-        };
+        });
         return rootView;
     }
 
