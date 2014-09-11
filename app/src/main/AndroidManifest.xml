@@ -13,28 +13,19 @@
         <activity
             android:name=".Main"
             android:label="@string/app_name">
-        <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+            <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service
-            android:name=".RadioService"
-            android:enabled="true"
-            android:exported="false" />
-        <service
-            android:name=".WebsiteService"
-            android:enabled="true"
-            android:exported="false" />
 
         <receiver
             android:name=".PlayerStateReceiver"
             android:enabled="true"
             android:exported="false" />
         <receiver android:name=".RadioWidget">
-            <intent-filter>
+        <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
 
@@ -45,6 +36,10 @@
 
         <service
             android:name=".RadioWidgetService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
+            android:name=".AnfoService"
             android:enabled="true"
             android:exported="false"></service>
     </application>

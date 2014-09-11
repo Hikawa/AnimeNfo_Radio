@@ -19,8 +19,8 @@ import org.aankor.animenforadio.api.SongInfo;
  */
 public class RadioNotification implements
         ServiceConnection,
-        WebsiteService.OnSongPosChangedListener,
-        WebsiteService.OnSongChangeListener {
+        AnfoService.OnSongPosChangedListener,
+        AnfoService.OnSongChangeListener {
     /**
      * The unique identifier for this type of notification.
      */
@@ -28,7 +28,7 @@ public class RadioNotification implements
     private final Context context;
     private final Service service;
     private Notification.Builder builder;
-    private WebsiteService.WebsiteBinder website;
+    private AnfoService.AnfoInterface anfo;
     private int lastPos;
     private RemoteViews views;
     private SongInfo currentSong;
@@ -54,14 +54,17 @@ public class RadioNotification implements
 
     public void start() {
         lastPos = -200;
-        context.bindService(new Intent(context, WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+        context.bindService(new Intent(context, AnfoService.class), this, Context.BIND_AUTO_CREATE);
     }
 
     public void stop() {
-        website.removeOnSongPosChangeListener(this);
-        website.removeOnSongChangeListener(this);
-        context.unbindService(this);
-        website = null;
+        // TODO: why am I called when I am not started
+        if (anfo != null) {
+            anfo.removeOnSongPosChangeListener(this);
+            anfo.removeOnSongChangeListener(this);
+            context.unbindService(this);
+            anfo = null;
+        }
         cancel();
     }
 
@@ -112,13 +115,13 @@ public class RadioNotification implements
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongPosChangeListener(this);
-        website.addOnSongChangeListener(this);
+        anfo = (AnfoService.AnfoInterface) iBinder;
+        anfo.addOnSongPosChangeListener(this);
+        anfo.addOnSongChangeListener(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-        website = null;
+        anfo = null;
     }
 }

@@ -1,11 +1,5 @@
-package org.aankor.animenforadio;
+package org.aankor.animenforadio.api;
 
-import android.app.Service;
-import android.content.Intent;
-import android.os.Binder;
-import android.os.IBinder;
-
-import org.aankor.animenforadio.api.SongInfo;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -18,73 +12,43 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.HttpsURLConnection;
 
-public class WebsiteService extends Service {
+/**
+ * Created by aankor on 11.09.14.
+ */
+public class WebsiteGate {
     private final Pattern mainNowPlayingPattern = Pattern.compile("^Artist: (.*) Title: (.*) Album: (.*) Album Type: (.*) Series: (.*) Genre\\(s\\): (.*)$");
     private final Pattern raitingNowPlayingPattern = Pattern.compile("Rating: (.*)\n");
     private final Pattern nowPlayingBarPattern = Pattern.compile("^left: ([\\d\\.]*)%$");
-    private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(1);
-    SongInfo currentSong = null;
-    long currentSongEndTime = 0;
-    boolean fetchingCompletionNotified;
-    SongPos currentSongPos = null;
-    ScheduledFuture processorHandle = null;
-    SortedMap<Subscription, Long> refreshSchedule = new TreeMap<Subscription, Long>();
-    private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
-    private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
     private String phpSessID = "";
-    private boolean isActive = false;
+    private SongInfo currentSong = null;
+    private long currentSongEndTime = 0;
+    private SongPos currentSongPos = null;
 
-    public WebsiteService() {
+    public SongInfo getCurrentSong() {
+        return currentSong;
     }
 
-    public void activateScheduler() {
-        if (isActive)
-            return;
-        isActive = true;
-        processorHandle = scheduler.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                process();
-            }
-        }, 0, 1, TimeUnit.SECONDS);
+    public long getCurrentSongEndTime() {
+        return currentSongEndTime;
     }
 
-    private void process() {
-        long currentTime = new Date().getTime();
-        EnumSet<Subscription> fetchNow = EnumSet.noneOf(Subscription.class);
-        for (SortedMap.Entry<Subscription, Long> e : refreshSchedule.entrySet()) {
-            long time = e.getValue().longValue();
-            if ((time == 0l) || (time < currentTime)) {
-                fetchNow.add(e.getKey());
-            }
-        }
-        fetch(fetchNow);
-        if (currentSongPos != null)
-            synchronized (onSongPosChangedListeners) {
-                for (OnSongPosChangedListener l : onSongPosChangedListeners)
-                    l.onSongPosChanged(currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
-            }
+    public int getCurrentSongPosTime() {
+        return currentSongPos.time;
     }
 
-    @Override
-    public void onDestroy() {
-        if (processorHandle != null)
-            processorHandle.cancel(false);
+    public String getCurrentSongPosTimeStr() {
+        return currentSongPos.timeStr;
+    }
+
+    public double getCurrentSongPosPercent() {
+        return currentSongPos.percent;
     }
 
     private void fetchCookies() throws IOException {
@@ -113,6 +77,7 @@ public class WebsiteService extends Service {
         Matcher matcher = mainNowPlayingPattern.matcher(spans.first().text());
 
         if (!matcher.find()) {
+            currentSong = null;
             return false;
         }
         SongInfo newSongInfo = new SongInfo(
@@ -160,9 +125,6 @@ public class WebsiteService extends Service {
             newSongInfo.setArtBmp(currentSong.getArtBmp());
         currentSong = newSongInfo;
         currentSongPos = new SongPos(songPosTime, songPosTimeStr, nowPlayingPos);
-        notifySongChanged();
-        currentTime = (new Date()).getTime();
-        refreshSchedule.put(Subscription.CURRENT_SONG, Math.max(currentTime + 5000, Math.min(currentSongEndTime + 30, currentTime + 180000)));
         return true;
     }
 
@@ -207,87 +169,30 @@ public class WebsiteService extends Service {
 
     }
 
-    // returns: song changed
-    private void fetch(EnumSet<Subscription> subscriptions) {
+    public void fetch(EnumSet<Subscription> subscriptions) {
         boolean currentSongPosUpdated = false;
         if (!subscriptions.isEmpty()) {
-            notifyFetchStarted(subscriptions);
             try {
                 JSONObject res = request(subscriptions);
                 if (subscriptions.contains(Subscription.CURRENT_SONG))
                     currentSongPosUpdated = updateNowPlaying(res.getString("nowplaying"));
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (JSONException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                currentSong = null;
+                // e.printStackTrace();
             }
-
-            // remove waiting state if some error
-            if (subscriptions.contains(Subscription.CURRENT_SONG) && !fetchingCompletionNotified)
-                notifySongUnknown();
         }
+
         if (!currentSongPosUpdated) {
             if (currentSong == null)
                 currentSongPos = null;
             else
-                currentSongPos.estimate(currentSongEndTime, currentSong.getDuration());
+                currentSongPos = new SongPos(currentSongEndTime, currentSong.getDuration());
         }
     }
 
-    private void notifySongChanged() {
-        synchronized (onSongChangeListeners) {
-            for (OnSongChangeListener l : onSongChangeListeners) {
-                l.onSongChanged(currentSong, currentSongEndTime,
-                        currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
-            }
-        }
-        fetchingCompletionNotified = true;
-    }
-
-    private void notifySongUnknown() {
-        synchronized (onSongChangeListeners) {
-            for (OnSongChangeListener l : onSongChangeListeners) {
-                l.onSongUnknown();
-            }
-        }
-        fetchingCompletionNotified = true;
-    }
-
-    private void notifyFetchStarted(EnumSet<Subscription> subscriptions) {
-        for (Subscription s : subscriptions) {
-            switch (s) {
-                case CURRENT_SONG:
-                    synchronized (onSongChangeListeners) {
-                        for (OnSongChangeListener l : onSongChangeListeners)
-                            l.onFetchingStarted();
-                    }
-            }
-        }
-        fetchingCompletionNotified = false;
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return new WebsiteBinder();
-    }
-
-    enum Subscription {
+    public enum Subscription {
         CURRENT_SONG,
         QUEUE
-    }
-
-    public interface OnSongChangeListener {
-        void onFetchingStarted();
-
-        void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos);
-
-        // void onSongRemained();
-
-        void onSongUnknown();
-    }
-
-    public interface OnSongPosChangedListener {
-        void onSongPosChanged(int songPosTime, String songPosTimeStr, double nowPlayingPos);
     }
 
     private static class SongPos {
@@ -302,7 +207,7 @@ public class WebsiteService extends Service {
             fix();
         }
 
-        public void estimate(long currentSongEndTime, int currentSongDuration) {
+        private SongPos(long currentSongEndTime, int currentSongDuration) {
             long currentTime = new Date().getTime();
             time = (int) ((currentSongEndTime - currentTime) / 1000);
             final int secs = (time % 60);
@@ -323,42 +228,4 @@ public class WebsiteService extends Service {
         }
     }
 
-    public class WebsiteBinder extends Binder {
-        public void addOnSongChangeListener(final OnSongChangeListener l) {
-            boolean first;
-            synchronized (onSongChangeListeners) {
-                first = onSongChangeListeners.isEmpty();
-                onSongChangeListeners.add(l);
-            }
-            final boolean wasFirst = first;
-            scheduler.execute(new Runnable() {
-                @Override
-                public void run() {
-                    if (wasFirst) {
-                        refreshSchedule.put(Subscription.CURRENT_SONG, 0l); // schedule now
-                    } else if (currentSong != null)
-                        l.onSongChanged(currentSong, currentSongEndTime, currentSongPos.time, currentSongPos.timeStr, currentSongPos.percent);
-                }
-            });
-            activateScheduler();
-        }
-
-        public void removeOnSongChangeListener(final OnSongChangeListener l) {
-            synchronized (onSongChangeListeners) {
-                onSongChangeListeners.remove(l);
-            }
-        }
-
-        public void addOnSongPosChangeListener(final OnSongPosChangedListener l) {
-            synchronized (onSongPosChangedListeners) {
-                onSongPosChangedListeners.add(l);
-            }
-        }
-
-        public void removeOnSongPosChangeListener(final OnSongPosChangedListener l) {
-            synchronized (onSongPosChangedListeners) {
-                onSongPosChangedListeners.remove(l);
-            }
-        }
-    }
 }

@@ -18,7 +18,7 @@ import org.aankor.animenforadio.api.SongInfo;
 /**
  *
  */
-public class NowPlaying extends Fragment implements ServiceConnection, WebsiteService.OnSongChangeListener {
+public class NowPlaying extends Fragment implements ServiceConnection, AnfoService.OnSongChangeListener {
     private TextView artistView;
     private TextView titleView;
     private TextView albumView;
@@ -28,7 +28,7 @@ public class NowPlaying extends Fragment implements ServiceConnection, WebsiteSe
     private ImageView albumArtView;
     private TextView ratingTextView;
 
-    private WebsiteService.WebsiteBinder website;
+    private AnfoService.AnfoInterface anfo;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -50,13 +50,13 @@ public class NowPlaying extends Fragment implements ServiceConnection, WebsiteSe
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().bindService(new Intent(getActivity(), WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        website.removeOnSongChangeListener(this);
+        anfo.removeOnSongChangeListener(this);
         getActivity().unbindService(this);
     }
 
@@ -97,12 +97,12 @@ public class NowPlaying extends Fragment implements ServiceConnection, WebsiteSe
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongChangeListener(this);
+        anfo = (AnfoService.AnfoInterface) iBinder;
+        anfo.addOnSongChangeListener(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-        website = null;
+        anfo = null;
     }
 }

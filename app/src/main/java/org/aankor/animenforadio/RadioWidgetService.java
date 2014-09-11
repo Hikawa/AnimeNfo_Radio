@@ -9,22 +9,22 @@ import android.os.IBinder;
 
 import org.aankor.animenforadio.api.SongInfo;
 
-public class RadioWidgetService extends Service implements ServiceConnection, WebsiteService.OnSongChangeListener {
-    WebsiteService.WebsiteBinder website;
+public class RadioWidgetService extends Service implements ServiceConnection, AnfoService.OnSongChangeListener {
+    AnfoService.AnfoInterface anfo;
 
     public RadioWidgetService() {
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        bindService(new Intent(getApplicationContext(), WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(getApplicationContext(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
 
         return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
-        website.removeOnSongChangeListener(this);
+        anfo.removeOnSongChangeListener(this);
     }
 
     @Override
@@ -49,12 +49,12 @@ public class RadioWidgetService extends Service implements ServiceConnection, We
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongChangeListener(this);
+        anfo = (AnfoService.AnfoInterface) iBinder;
+        anfo.addOnSongChangeListener(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-        website = null;
+        anfo = null;
     }
 }

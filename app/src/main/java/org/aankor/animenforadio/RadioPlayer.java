@@ -23,8 +23,8 @@ import org.aankor.animenforadio.api.SongInfo;
  */
 public class RadioPlayer extends Fragment implements
         ServiceConnection,
-        WebsiteService.OnSongPosChangedListener,
-        WebsiteService.OnSongChangeListener {
+        AnfoService.OnSongPosChangedListener,
+        AnfoService.OnSongChangeListener {
     PlayerStateReceiver playerStateReceiver;
     private boolean isPlaying = false;
     private ImageView albumMiniArtView;
@@ -32,7 +32,7 @@ public class RadioPlayer extends Fragment implements
     private ProgressBar progressView;
     private TextView progressTextView;
     private SongInfo currentSong;
-    private WebsiteService.WebsiteBinder website;
+    private AnfoService.AnfoInterface anfo;
 
 
     public RadioPlayer() {
@@ -59,9 +59,10 @@ public class RadioPlayer extends Fragment implements
                 isPlaying = !isPlaying;
                 playStopButton.setBackgroundResource(isPlaying ? R.drawable.player_stop : R.drawable.player_play);
                 if (isPlaying) {
-                    getActivity().startService(new Intent(getActivity(), RadioService.class));
+                    getActivity().startService(new Intent(getActivity(), AnfoService.class));
                 } else {
-                    getActivity().stopService(new Intent(getActivity(), RadioService.class));
+                    // TODO: what if service has not complete binding here
+                    anfo.stopPlayback();
                 }
             }
         });
@@ -84,14 +85,14 @@ public class RadioPlayer extends Fragment implements
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().bindService(new Intent(getActivity(), WebsiteService.class), this, Context.BIND_AUTO_CREATE);
+        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        website.removeOnSongPosChangeListener(this);
-        website.removeOnSongChangeListener(this);
+        anfo.removeOnSongPosChangeListener(this);
+        anfo.removeOnSongChangeListener(this);
         getActivity().unbindService(this);
     }
 
@@ -144,13 +145,13 @@ public class RadioPlayer extends Fragment implements
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        website = (WebsiteService.WebsiteBinder) iBinder;
-        website.addOnSongPosChangeListener(this);
-        website.addOnSongChangeListener(this);
+        anfo = (AnfoService.AnfoInterface) iBinder;
+        anfo.addOnSongPosChangeListener(this);
+        anfo.addOnSongChangeListener(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-        website = null;
+        anfo = null;
     }
 }
