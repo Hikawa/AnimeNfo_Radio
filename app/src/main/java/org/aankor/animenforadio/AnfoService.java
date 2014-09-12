@@ -23,9 +23,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class AnfoService extends Service {
-    public static final String ACTION_KEY = "action";
-    public static final int START_PLAYBACK_ACTION = 1;
-    public static final int REFRESH_WIDGET_ACTION = 2;
+    public static final String START_PLAYBACK_ACTION = "org.aankor.animenforadio.AnfoService.startPlayback";
+    public static final String REFRESH_WIDGET_ACTION = "org.aankor.animenforadio.AnfoService.stopPlayback";
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(1);
     boolean fetchingCompletionNotified;
@@ -59,11 +58,11 @@ public class AnfoService extends Service {
 
             @Override
             public void onPlay(Context context) {
-                // Start service from main receiver
-                /*
-                Intent intent = new Intent(context, AnfoService.class);
+                /*Intent intent = new Intent(context, AnfoService.class);
                 intent.putExtra(ACTION_KEY, START_PLAYBACK_ACTION);
                 startService(intent);
+                if (!mediaPlayer.isPlaying())
+                    mediaPlayer.prepareAsync();
                 */
             }
         });
@@ -79,6 +78,7 @@ public class AnfoService extends Service {
                 if (!mp.isPlaying())
                     mp.start();
                 notification.start();
+                RadioWidget.onPlay(getApplicationContext());
             }
         });
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -91,13 +91,12 @@ public class AnfoService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int action = intent.getIntExtra(ACTION_KEY, 0);
-        switch (action) {
-            case START_PLAYBACK_ACTION:
-                if (!mediaPlayer.isPlaying())
-                    mediaPlayer.prepareAsync();
-                return START_STICKY;
-            case REFRESH_WIDGET_ACTION:
+        String action = intent.getAction();
+        if (action.equals(START_PLAYBACK_ACTION)) {
+            if (!mediaPlayer.isPlaying())
+                mediaPlayer.prepareAsync();
+            return START_STICKY;
+        } else if (action.equals(REFRESH_WIDGET_ACTION)) {
                 refreshWidgetCommand();
                 return START_NOT_STICKY;
         }
@@ -127,12 +126,10 @@ public class AnfoService extends Service {
     public void onDestroy() {
         if (processorHandle != null)
             processorHandle.cancel(false);
-        if (mediaPlayer.isPlaying())
-            mediaPlayer.stop();
+        stopPlayback();
         mediaPlayer.release();
-        notification.stop();
         playerStateReceiver.unregister(getApplicationContext());
-        RadioWidget.notifyAnfoStopsToSendUpdates();
+        RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
         super.onDestroy();
     }
@@ -265,7 +262,7 @@ public class AnfoService extends Service {
             last = onSongChangeListeners.isEmpty();
         }
         if (last)
-            RadioWidget.notifyAnfoStopsToSendUpdates();
+            RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
     }
 
     private void addOnSongPosChangeListener(final OnSongPosChangedListener l) {
@@ -281,9 +278,11 @@ public class AnfoService extends Service {
     }
 
     private void stopPlayback() {
-        mediaPlayer.stop();
+        if (mediaPlayer.isPlaying())
+            mediaPlayer.stop();
         // if hide notification when not playing
         notification.stop();
+        RadioWidget.onStop(getApplicationContext());
         AnfoService.this.stopSelf(); // make service bound
     }
 

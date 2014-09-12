@@ -29,6 +29,7 @@ public class PlayerStateReceiver extends BroadcastReceiver {
 
     public void register(Context context) {
         IntentFilter filter = new IntentFilter();
+        filter.addAction(PlayerStateReceiver.KEY_PLAY);
         filter.addAction(PlayerStateReceiver.KEY_STOP);
         context.registerReceiver(this, filter);
     }

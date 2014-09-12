@@ -59,9 +59,7 @@ public class RadioPlayer extends Fragment implements
                 isPlaying = !isPlaying;
                 playStopButton.setBackgroundResource(isPlaying ? R.drawable.player_stop : R.drawable.player_play);
                 if (isPlaying) {
-                    Intent intent = new Intent(getActivity(), AnfoService.class);
-                    intent.putExtra(AnfoService.ACTION_KEY, AnfoService.START_PLAYBACK_ACTION);
-                    getActivity().startService(intent);
+                    getActivity().startService(new Intent(getActivity(), AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION));
                 } else {
                     // TODO: what if service has not complete binding here
                     anfo.stopPlayback();

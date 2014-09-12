@@ -22,10 +22,15 @@ public class RadioWidget extends AppWidgetProvider {
     private static volatile boolean doAnfoSendsUpdates = false;
     private static volatile boolean isEnabled = false;
     private static AlarmManager alarmManager = null;
-    private static PendingIntent anfoIntent;
+    private static PendingIntent anfoIntent = null;
     private static long songEndTime;
     private static RemoteViews views;
     private static boolean isPlaying = false;
+
+    private static PendingIntent makeAnfoIntent(Context context) {
+        return anfoIntent = PendingIntent.getService(context, 0,
+                new Intent(context, AnfoService.class).setAction(AnfoService.REFRESH_WIDGET_ACTION), 0);
+    }
 
     // called from service
     public static void updateWidget(Context context, SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
@@ -36,7 +41,7 @@ public class RadioWidget extends AppWidgetProvider {
         views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
         updateWidget(context);
         if (isEnabled && !doAnfoSendsUpdates)
-            startAlarm();
+            startAlarm(context);
     }
 
     private static void updateWidget(Context context) {
@@ -44,8 +49,16 @@ public class RadioWidget extends AppWidgetProvider {
         if (views == null)
             views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
         views.setImageViewResource(R.id.playStopButton, isPlaying ? R.drawable.player_stop : R.drawable.player_play);
-        views.setOnClickPendingIntent(R.id.playStopButton, PendingIntent.getBroadcast(context, 0,
-                new Intent(isPlaying ? PlayerStateReceiver.KEY_STOP : PlayerStateReceiver.KEY_PLAY), 0));
+
+        PendingIntent intent;
+        if (isPlaying)
+            intent = PendingIntent.getBroadcast(context, 0,
+                    new Intent(PlayerStateReceiver.KEY_STOP), 0);
+        else
+            intent = PendingIntent.getService(context, 0,
+                    new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+        views.setOnClickPendingIntent(R.id.playStopButton, intent);
+
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
         int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, RadioWidget.class));
         appWidgetManager.updateAppWidget(ids, views);
@@ -56,20 +69,31 @@ public class RadioWidget extends AppWidgetProvider {
         stopAlarm();
     }
 
-    public static void notifyAnfoStopsToSendUpdates() {
+    public static void notifyAnfoStopsToSendUpdates(Context context) {
         doAnfoSendsUpdates = false;
         if (isEnabled)
-            startAlarm();
+            startAlarm(context);
     }
 
-    public static void startAlarm() {
-        alarmManager.set(AlarmManager.RTC, Math.max(songEndTime + 500, new Date().getTime() + 30000), anfoIntent);
+    public static void startAlarm(Context context) {
+        alarmManager.set(AlarmManager.RTC, Math.max(songEndTime + 500, new Date().getTime() + 30000),
+                makeAnfoIntent(context));
     }
 
     public static void stopAlarm() {
         if (alarmManager == null)
             return;
         alarmManager.cancel(anfoIntent);
+    }
+
+    public static void onPlay(Context context) {
+        isPlaying = true;
+        updateWidget(context);
+    }
+
+    public static void onStop(Context context) {
+        isPlaying = false;
+        updateWidget(context);
     }
 
     @Override
@@ -84,14 +108,11 @@ public class RadioWidget extends AppWidgetProvider {
         super.onEnabled(context);
 
         alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(context, AnfoService.class);
-        intent.putExtra(AnfoService.ACTION_KEY, AnfoService.REFRESH_WIDGET_ACTION);
-        anfoIntent = PendingIntent.getService(context, 0, intent, 0);
         try {
             if (doAnfoSendsUpdates) // Has updated earlier
                 updateWidget(context);
             else
-                anfoIntent.send();
+                makeAnfoIntent(context).send();
         } catch (PendingIntent.CanceledException e) {
             e.printStackTrace();
         }
@@ -102,16 +123,6 @@ public class RadioWidget extends AppWidgetProvider {
         isEnabled = false;
         stopAlarm();
         super.onDisabled(context);
-    }
-
-    public void onPlay(Context context) {
-        isPlaying = true;
-        updateWidget(context);
-    }
-
-    public void onStop(Context context) {
-        isPlaying = false;
-        updateWidget(context);
     }
 }
 

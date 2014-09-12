@@ -143,7 +143,7 @@ public class SongInfo {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } // FileNotFoundException
     }
 
     public void unsetArtUrl() {
