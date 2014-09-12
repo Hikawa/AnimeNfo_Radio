@@ -72,7 +72,7 @@ public class RadioNotification implements
         service.startForeground(NOTIFICATION_TAG.hashCode(), notification);
     }
 
-    public void cancel() {
+    private void cancel() {
         service.stopForeground(true);
     }
 

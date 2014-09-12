@@ -23,6 +23,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class AnfoService extends Service {
+    public static final String ACTION_KEY = "action";
+    public static final int START_PLAYBACK_ACTION = 1;
+    public static final int REFRESH_WIDGET_ACTION = 2;
     private final ScheduledExecutorService scheduler =
             Executors.newScheduledThreadPool(1);
     boolean fetchingCompletionNotified;
@@ -35,7 +38,6 @@ public class AnfoService extends Service {
     private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
     private boolean isSchedulerActive = false;
-
 
     public AnfoService() {
     }
@@ -54,6 +56,16 @@ public class AnfoService extends Service {
             public void onStop(Context context) {
                 stopPlayback();
             }
+
+            @Override
+            public void onPlay(Context context) {
+                // Start service from main receiver
+                /*
+                Intent intent = new Intent(context, AnfoService.class);
+                intent.putExtra(ACTION_KEY, START_PLAYBACK_ACTION);
+                startService(intent);
+                */
+            }
         });
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
@@ -70,22 +82,45 @@ public class AnfoService extends Service {
             }
         });
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
+        try {
+            mediaPlayer.setDataSource("http://itori.animenfo.com:443");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mediaPlayer.isPlaying())
-            return START_STICKY; // wtf
-
-        try {
-            mediaPlayer.setDataSource("http://itori.animenfo.com:443");
-        } catch (IOException e) {
-
+        int action = intent.getIntExtra(ACTION_KEY, 0);
+        switch (action) {
+            case START_PLAYBACK_ACTION:
+                if (!mediaPlayer.isPlaying())
+                    mediaPlayer.prepareAsync();
+                return START_STICKY;
+            case REFRESH_WIDGET_ACTION:
+                refreshWidgetCommand();
+                return START_NOT_STICKY;
         }
+        return START_NOT_STICKY;
+    }
 
-        mediaPlayer.prepareAsync();
-        return START_STICKY;
+    private void refreshWidgetCommand() {
+        scheduler.execute(new Runnable() {
+            @Override
+            public void run() {
+                gate.fetch(EnumSet.of(WebsiteGate.Subscription.CURRENT_SONG));
+                if (gate.getCurrentSong() != null) {
+                    RadioWidget.updateWidget(
+                            getApplicationContext(),
+                            gate.getCurrentSong(),
+                            gate.getCurrentSongEndTime(),
+                            gate.getCurrentSongPosTime(),
+                            gate.getCurrentSongPosTimeStr(),
+                            gate.getCurrentSongPosPercent());
+                }
+                stopSelf();
+            }
+        });
     }
 
     @Override
@@ -97,6 +132,7 @@ public class AnfoService extends Service {
         mediaPlayer.release();
         notification.stop();
         playerStateReceiver.unregister(getApplicationContext());
+        RadioWidget.notifyAnfoStopsToSendUpdates();
 
         super.onDestroy();
     }
@@ -159,6 +195,13 @@ public class AnfoService extends Service {
                             }
                         }
                     }
+                    RadioWidget.updateWidget(
+                            getApplicationContext(),
+                            gate.getCurrentSong(),
+                            gate.getCurrentSongEndTime(),
+                            gate.getCurrentSongPosTime(),
+                            gate.getCurrentSongPosTimeStr(),
+                            gate.getCurrentSongPosPercent());
                     break;
             }
         }
@@ -195,6 +238,8 @@ public class AnfoService extends Service {
             first = onSongChangeListeners.isEmpty();
             onSongChangeListeners.add(l);
         }
+        if (first)
+            RadioWidget.notifyAnfoStartsToSendUpdates();
         final boolean wasFirst = first;
         scheduler.execute(new Runnable() {
             @Override
@@ -214,9 +259,13 @@ public class AnfoService extends Service {
     }
 
     private void removeOnSongChangeListener(final OnSongChangeListener l) {
+        boolean last = false;
         synchronized (onSongChangeListeners) {
             onSongChangeListeners.remove(l);
+            last = onSongChangeListeners.isEmpty();
         }
+        if (last)
+            RadioWidget.notifyAnfoStopsToSendUpdates();
     }
 
     private void addOnSongPosChangeListener(final OnSongPosChangedListener l) {
@@ -233,6 +282,8 @@ public class AnfoService extends Service {
 
     private void stopPlayback() {
         mediaPlayer.stop();
+        // if hide notification when not playing
+        notification.stop();
         AnfoService.this.stopSelf(); // make service bound
     }
 

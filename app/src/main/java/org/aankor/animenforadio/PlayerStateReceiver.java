@@ -7,10 +7,15 @@ import android.content.IntentFilter;
 
 public class PlayerStateReceiver extends BroadcastReceiver {
     public static final String KEY_STOP = "org.aankor.animenforadio.RadioService.stopRadio";
+    public static final String KEY_PLAY = "org.aankor.animenforadio.RadioService.playRadio";
     private Listener listener;
 
     public PlayerStateReceiver() {
 
+    }
+
+    public PlayerStateReceiver(Listener listener) {
+        this.listener = listener;
     }
 
     public PlayerStateReceiver(Context context, Listener listener) {
@@ -34,12 +39,17 @@ public class PlayerStateReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (intent.getAction().equals(PlayerStateReceiver.KEY_STOP)) {
+        final String action = intent.getAction();
+        if (action.equals(PlayerStateReceiver.KEY_PLAY)) {
+            listener.onPlay(context);
+        } else if (action.equals(PlayerStateReceiver.KEY_STOP)) {
             listener.onStop(context);
         }
     }
 
     public interface Listener {
         void onStop(Context context);
+
+        void onPlay(Context context);
     }
 }
