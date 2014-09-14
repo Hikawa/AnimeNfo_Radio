@@ -26,7 +26,7 @@ public class AnfoService extends Service {
     public static final String START_PLAYBACK_ACTION = "org.aankor.animenforadio.AnfoService.startPlayback";
     public static final String REFRESH_WIDGET_ACTION = "org.aankor.animenforadio.AnfoService.stopPlayback";
     private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(1);
+            Executors.newSingleThreadScheduledExecutor();
     boolean fetchingCompletionNotified;
     ScheduledFuture processorHandle = null;
     SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
@@ -37,6 +37,9 @@ public class AnfoService extends Service {
     private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
     private boolean isSchedulerActive = false;
+    private boolean isPaused = false;
+    private long playerStartedTime = 0;
+    private ScheduledFuture<?> stopBufferingTask = null;
 
     public AnfoService() {
     }
@@ -75,18 +78,38 @@ public class AnfoService extends Service {
         mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
             public void onPrepared(MediaPlayer mp) {
-                if (!mp.isPlaying())
-                    mp.start();
-                notification.start();
-                RadioWidget.onPlay(getApplicationContext());
+                if (!mp.isPlaying()) {
+                    playerStartedTime = new Date().getTime();
+                    startPlayback();
+                }
             }
         });
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        try {
-            mediaPlayer.setDataSource("http://itori.animenfo.com:443");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        /*
+        mediaPlayer.setOnInfoListener(new MediaPlayer.OnInfoListener() {
+            @Override
+            public boolean onInfo(MediaPlayer mp, int what, int extra) {
+                switch (what) {
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+                        Log.i("Media info", "buffering start");
+                        break;
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+                        Log.i("Media info", "buffering end");
+                        break;
+                    case MediaPlayer.MEDIA_INFO_NOT_SEEKABLE:
+                        Log.i("Media", "not seekable");
+                        break;
+                }
+                return false;
+            }
+        });
+        mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
+            @Override
+            public void onBufferingUpdate(MediaPlayer mp, int percent) {
+                Log.i("BufferingUpdate", "" + percent);
+                Log.i("Pos", "" + mp.getCurrentPosition());
+            }
+        });
+        */
     }
 
     @Override
@@ -94,7 +117,24 @@ public class AnfoService extends Service {
         String action = intent.getAction();
         if (action.equals(START_PLAYBACK_ACTION)) {
             if (!mediaPlayer.isPlaying())
-                mediaPlayer.prepareAsync();
+                synchronized (mediaPlayer) {
+                    if (isPaused) {
+                        isPaused = false;
+                        stopBufferingTask.cancel(false); // synchronization here
+                        long currentTime = new Date().getTime();
+                        mediaPlayer.seekTo((int) (currentTime - playerStartedTime));
+                        startPlayback();
+
+                    } else {
+                        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                        try {
+                            mediaPlayer.setDataSource("http://itori.animenfo.com:443");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        mediaPlayer.prepareAsync();
+                    }
+                }
             return START_STICKY;
         } else if (action.equals(REFRESH_WIDGET_ACTION)) {
                 refreshWidgetCommand();
@@ -126,7 +166,10 @@ public class AnfoService extends Service {
     public void onDestroy() {
         if (processorHandle != null)
             processorHandle.cancel(false);
-        stopPlayback();
+        if (mediaPlayer.isPlaying())
+            mediaPlayer.stop();
+        notification.stop();
+        RadioWidget.onStop(getApplicationContext());
         mediaPlayer.release();
         playerStateReceiver.unregister(getApplicationContext());
         RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
@@ -277,9 +320,32 @@ public class AnfoService extends Service {
         }
     }
 
+    public void startPlayback() {
+        mediaPlayer.start();
+        notification.start();
+        RadioWidget.onPlay(getApplicationContext());
+    }
+
     private void stopPlayback() {
-        if (mediaPlayer.isPlaying())
-            mediaPlayer.stop();
+        synchronized (mediaPlayer) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.pause();
+                isPaused = true;
+            }
+            stopBufferingTask = Executors.newSingleThreadScheduledExecutor()
+                    .schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            synchronized (mediaPlayer) {
+                                if (isPaused) {
+                                    mediaPlayer.stop();
+                                    mediaPlayer.reset();
+                                    isPaused = false;
+                                }
+                            }
+                        }
+                    }, 60, TimeUnit.SECONDS);
+        }
         // if hide notification when not playing
         notification.stop();
         RadioWidget.onStop(getApplicationContext());
