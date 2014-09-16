@@ -67,6 +67,12 @@ public class RadioPlayer extends Fragment implements
                     case PLAYING:
                         anfo.stopPlayback();
                         break;
+                    case QUIET:
+                        anfo.stopPlayback();
+                        break;
+                    case NO_AUDIO_FOCUS:
+                        anfo.stopPlayback();
+                        break;
                 }
                 updatePlayButton();
             }
@@ -107,6 +113,12 @@ public class RadioPlayer extends Fragment implements
                 break;
             case PLAYING:
                 playStopButton.setBackgroundResource(R.drawable.button_stop);
+                break;
+            case QUIET:
+                playStopButton.setBackgroundResource(R.drawable.button_stop);
+                break;
+            case NO_AUDIO_FOCUS:
+                playStopButton.setBackgroundResource(R.drawable.button_no_focus);
                 break;
         }
     }

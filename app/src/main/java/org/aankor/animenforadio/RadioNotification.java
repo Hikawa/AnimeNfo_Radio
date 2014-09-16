@@ -140,6 +140,12 @@ public class RadioNotification implements
             case PLAYING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
                 break;
+            case QUIET:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                break;
+            case NO_AUDIO_FOCUS:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
+                break;
         }
         show(builder.build());
     }

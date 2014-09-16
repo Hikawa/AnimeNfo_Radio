@@ -65,6 +65,16 @@ public class RadioWidget extends AppWidgetProvider {
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
                 break;
+            case QUIET:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
+                break;
+            case NO_AUDIO_FOCUS:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
+                break;
         }
 
         views.setOnClickPendingIntent(R.id.playStopButton, intent);

@@ -7,8 +7,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.widget.Toast;
 
 import org.aankor.animenforadio.api.SongInfo;
 import org.aankor.animenforadio.api.WebsiteGate;
@@ -24,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class AnfoService extends Service {
+public class AnfoService extends Service implements AudioManager.OnAudioFocusChangeListener {
     public static final String START_PLAYBACK_ACTION = "org.aankor.animenforadio.AnfoService.startPlayback";
     public static final String REFRESH_WIDGET_ACTION = "org.aankor.animenforadio.AnfoService.stopPlayback";
     public static final String KEY_STOP = "org.aankor.animenforadio.AnfoService.stopRadio";
@@ -33,6 +36,8 @@ public class AnfoService extends Service {
     boolean fetchingCompletionNotified;
     ScheduledFuture processorHandle = null;
     SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    WifiManager.WifiLock wifiLock = null;
+    AudioManager audioManager = null;
     private PlayerState currentState = PlayerState.STOPPED;
     private WebsiteGate gate = new WebsiteGate();
     private CommandReceiver commandReceiver;
@@ -46,6 +51,7 @@ public class AnfoService extends Service {
     private long playerStartedTime = 0;
     private ScheduledFuture<?> stopBufferingTask = null;
 
+
     public AnfoService() {
     }
 
@@ -57,6 +63,9 @@ public class AnfoService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
+                .createWifiLock(WifiManager.WIFI_MODE_FULL, "anfo_stream_lock");
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         notification = new RadioNotification(this);
         commandReceiver = new CommandReceiver(getApplicationContext()) {
             @Override
@@ -64,9 +73,11 @@ public class AnfoService extends Service {
                 stopPlayback();
             }
         };
+        mediaPlayer.setWakeMode(getApplicationContext(), PowerManager.PARTIAL_WAKE_LOCK);
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
+                wifiLock.release();
                 return false;
             }
         });
@@ -109,26 +120,7 @@ public class AnfoService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent.getAction();
         if (action.equals(START_PLAYBACK_ACTION)) {
-            if (!mediaPlayer.isPlaying())
-                synchronized (mediaPlayer) {
-                    if (isPaused) {
-                        isPaused = false;
-                        stopBufferingTask.cancel(false); // synchronization here
-                        long currentTime = new Date().getTime();
-                        mediaPlayer.seekTo((int) (currentTime - playerStartedTime));
-                        startPlayback();
-
-                    } else {
-                        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                        try {
-                            mediaPlayer.setDataSource("http://itori.animenfo.com:443");
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        mediaPlayer.prepareAsync();
-                        notifyPlayerStateChanged(PlayerState.CACHING);
-                    }
-                }
+            resumePlayback();
             notification.start();
             return START_STICKY;
         } else if (action.equals(REFRESH_WIDGET_ACTION)) {
@@ -165,6 +157,8 @@ public class AnfoService extends Service {
             mediaPlayer.stop();
         notification.stop();
         mediaPlayer.release();
+        wifiLock.release();
+        audioManager.abandonAudioFocus(this);
         commandReceiver.unregister(getApplicationContext());
         RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
@@ -335,12 +329,31 @@ public class AnfoService extends Service {
         }
     }
 
-    public void startPlayback() {
-        mediaPlayer.start();
-        notifyPlayerStateChanged(PlayerState.PLAYING);
+    private void resumePlayback() {
+        synchronized (mediaPlayer) {
+            if (!mediaPlayer.isPlaying()) {
+                if (isPaused) {
+                    isPaused = false;
+                    stopBufferingTask.cancel(false); // synchronization here
+                    long currentTime = new Date().getTime();
+                    mediaPlayer.seekTo((int) (currentTime - playerStartedTime));
+                    startPlayback();
+
+                } else {
+                    mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                    try {
+                        mediaPlayer.setDataSource("http://itori.animenfo.com:443");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    mediaPlayer.prepareAsync();
+                    notifyPlayerStateChanged(PlayerState.CACHING);
+                }
+            }
+        }
     }
 
-    private void stopPlayback() {
+    private void pausePlayback() {
         synchronized (mediaPlayer) {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
@@ -353,6 +366,7 @@ public class AnfoService extends Service {
                                     if (isPaused) {
                                         mediaPlayer.stop();
                                         mediaPlayer.reset();
+                                        wifiLock.release();
                                         isPaused = false;
                                     }
                                 }
@@ -363,16 +377,73 @@ public class AnfoService extends Service {
                 isPaused = false;
             }
         }
+    }
+
+    public void startPlayback() {
+        if (AudioManager.AUDIOFOCUS_REQUEST_FAILED ==
+                audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)) {
+
+            Toast.makeText(getApplicationContext(), "Your audio system is busy now. Try to start playing later", Toast.LENGTH_LONG)
+                    .show();
+            synchronized (mediaPlayer) {
+                mediaPlayer.reset();
+                isPaused = false;
+            }
+            notifyPlayerStateChanged(PlayerState.STOPPED);
+            notification.stop();
+            AnfoService.this.stopSelf(); // make service bound
+            return;
+        }
+        mediaPlayer.start();
+        wifiLock.acquire();
+
+        notifyPlayerStateChanged(PlayerState.PLAYING);
+    }
+
+    private void stopPlayback() {
+        audioManager.abandonAudioFocus(this);
+        pausePlayback();
         notifyPlayerStateChanged(PlayerState.STOPPED);
         // if hide notification when not playing
         notification.stop();
         AnfoService.this.stopSelf(); // make service bound
     }
 
+    @Override
+    public void onAudioFocusChange(int focus) {
+        switch (focus) {
+            case AudioManager.AUDIOFOCUS_GAIN:
+                if (currentState == PlayerState.QUIET) {
+                    mediaPlayer.setVolume(1.0f, 1.0f);
+                    notifyPlayerStateChanged(PlayerState.PLAYING);
+                } else
+                    resumePlayback();
+                break;
+
+            case AudioManager.AUDIOFOCUS_LOSS:
+                stopPlayback(); // resume me manually
+                break;
+
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                pausePlayback();
+                notifyPlayerStateChanged(PlayerState.NO_AUDIO_FOCUS);
+                break;
+
+            case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                mediaPlayer.setVolume(0.1f, 0.1f);
+                notifyPlayerStateChanged(PlayerState.QUIET);
+                break;
+
+        }
+    }
+
     enum PlayerState {
         STOPPED,
         CACHING,
-        PLAYING
+        PLAYING,
+        QUIET,
+        NO_NETWORK,
+        NO_AUDIO_FOCUS
     }
 
     public interface OnSongChangeListener {
