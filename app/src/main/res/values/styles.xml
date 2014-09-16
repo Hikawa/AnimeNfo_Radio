@@ -4,6 +4,19 @@
     <style name="AppTheme" parent="android:Theme.Holo.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="android:textSize">13sp</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:textColor">@color/textColor</item>
+        <item name="android:imageButtonStyle">@style/Button</item>
+        <item name="android:layout_margin">@dimen/component_margin</item>
+    </style>
+
+    <style name="Panel">
+        <item name="android:background">@drawable/panel_border</item>
+    </style>
+
+    <style name="Button" parent="@android:style/Widget.ImageButton">
+        <item name="android:background">@drawable/button_play</item>
+        <item name="android:padding">15dp</item>
     </style>
 
 </resources>

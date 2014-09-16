@@ -25,7 +25,7 @@ public class RadioWidget extends AppWidgetProvider {
     private static PendingIntent anfoIntent = null;
     private static long songEndTime;
     private static RemoteViews views;
-    private static boolean isPlaying = false;
+    private static AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
 
     private static PendingIntent makeAnfoIntent(Context context) {
         return anfoIntent = PendingIntent.getService(context, 0,
@@ -48,15 +48,25 @@ public class RadioWidget extends AppWidgetProvider {
         // TODO: multithreading issues
         if (views == null)
             views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
-        views.setImageViewResource(R.id.playStopButton, isPlaying ? R.drawable.player_stop : R.drawable.player_play);
+        PendingIntent intent = null;
+        switch (currentState) {
+            case STOPPED:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                intent = PendingIntent.getService(context, 0,
+                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                break;
+            case CACHING:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
+                break;
+            case PLAYING:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
+                break;
+        }
 
-        PendingIntent intent;
-        if (isPlaying)
-            intent = PendingIntent.getBroadcast(context, 0,
-                    new Intent(PlayerStateReceiver.KEY_STOP), 0);
-        else
-            intent = PendingIntent.getService(context, 0,
-                    new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
         views.setOnClickPendingIntent(R.id.playStopButton, intent);
 
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
@@ -86,13 +96,8 @@ public class RadioWidget extends AppWidgetProvider {
         alarmManager.cancel(anfoIntent);
     }
 
-    public static void onPlay(Context context) {
-        isPlaying = true;
-        updateWidget(context);
-    }
-
-    public static void onStop(Context context) {
-        isPlaying = false;
+    public static void onPlayerStateChanged(Context context, AnfoService.PlayerState state) {
+        currentState = state;
         updateWidget(context);
     }
 

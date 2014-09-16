@@ -1,8 +1,10 @@
 package org.aankor.animenforadio;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -25,17 +27,20 @@ import java.util.concurrent.TimeUnit;
 public class AnfoService extends Service {
     public static final String START_PLAYBACK_ACTION = "org.aankor.animenforadio.AnfoService.startPlayback";
     public static final String REFRESH_WIDGET_ACTION = "org.aankor.animenforadio.AnfoService.stopPlayback";
+    public static final String KEY_STOP = "org.aankor.animenforadio.AnfoService.stopRadio";
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
     boolean fetchingCompletionNotified;
     ScheduledFuture processorHandle = null;
     SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    private PlayerState currentState = PlayerState.STOPPED;
     private WebsiteGate gate = new WebsiteGate();
-    private PlayerStateReceiver playerStateReceiver;
+    private CommandReceiver commandReceiver;
     private MediaPlayer mediaPlayer = new MediaPlayer();
     private RadioNotification notification;
     private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
+    private ArrayList<OnPlayerStateChangedListener> onPlayerStateChangedListeners = new ArrayList<OnPlayerStateChangedListener>();
     private boolean isSchedulerActive = false;
     private boolean isPaused = false;
     private long playerStartedTime = 0;
@@ -53,22 +58,12 @@ public class AnfoService extends Service {
     public void onCreate() {
         super.onCreate();
         notification = new RadioNotification(this);
-        playerStateReceiver = new PlayerStateReceiver(getApplicationContext(), new PlayerStateReceiver.Listener() {
+        commandReceiver = new CommandReceiver(getApplicationContext()) {
             @Override
             public void onStop(Context context) {
                 stopPlayback();
             }
-
-            @Override
-            public void onPlay(Context context) {
-                /*Intent intent = new Intent(context, AnfoService.class);
-                intent.putExtra(ACTION_KEY, START_PLAYBACK_ACTION);
-                startService(intent);
-                if (!mediaPlayer.isPlaying())
-                    mediaPlayer.prepareAsync();
-                */
-            }
-        });
+        };
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -84,24 +79,22 @@ public class AnfoService extends Service {
                 }
             }
         });
-        /*
+
         mediaPlayer.setOnInfoListener(new MediaPlayer.OnInfoListener() {
             @Override
             public boolean onInfo(MediaPlayer mp, int what, int extra) {
                 switch (what) {
                     case MediaPlayer.MEDIA_INFO_BUFFERING_START:
-                        Log.i("Media info", "buffering start");
+                        notifyPlayerStateChanged(PlayerState.CACHING);
                         break;
                     case MediaPlayer.MEDIA_INFO_BUFFERING_END:
-                        Log.i("Media info", "buffering end");
-                        break;
-                    case MediaPlayer.MEDIA_INFO_NOT_SEEKABLE:
-                        Log.i("Media", "not seekable");
+                        notifyPlayerStateChanged(PlayerState.PLAYING);
                         break;
                 }
                 return false;
             }
         });
+        /*
         mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
             @Override
             public void onBufferingUpdate(MediaPlayer mp, int percent) {
@@ -133,12 +126,14 @@ public class AnfoService extends Service {
                             e.printStackTrace();
                         }
                         mediaPlayer.prepareAsync();
+                        notifyPlayerStateChanged(PlayerState.CACHING);
                     }
                 }
+            notification.start();
             return START_STICKY;
         } else if (action.equals(REFRESH_WIDGET_ACTION)) {
-                refreshWidgetCommand();
-                return START_NOT_STICKY;
+            refreshWidgetCommand();
+            return START_NOT_STICKY;
         }
         return START_NOT_STICKY;
     }
@@ -169,9 +164,8 @@ public class AnfoService extends Service {
         if (mediaPlayer.isPlaying())
             mediaPlayer.stop();
         notification.stop();
-        RadioWidget.onStop(getApplicationContext());
         mediaPlayer.release();
-        playerStateReceiver.unregister(getApplicationContext());
+        commandReceiver.unregister(getApplicationContext());
         RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
         super.onDestroy();
@@ -272,6 +266,15 @@ public class AnfoService extends Service {
         fetchingCompletionNotified = false;
     }
 
+    private void notifyPlayerStateChanged(PlayerState state) {
+        currentState = state;
+        synchronized (onPlayerStateChangedListeners) {
+            for (OnPlayerStateChangedListener l : onPlayerStateChangedListeners)
+                l.onPlayerStateChanged(state);
+        }
+        RadioWidget.onPlayerStateChanged(getApplicationContext(), state);
+    }
+
     private void addOnSongChangeListener(final OnSongChangeListener l) {
         boolean first;
         synchronized (onSongChangeListeners) {
@@ -320,10 +323,21 @@ public class AnfoService extends Service {
         }
     }
 
+    private void addOnPlayerStateChangedListener(final OnPlayerStateChangedListener l) {
+        synchronized (onPlayerStateChangedListeners) {
+            onPlayerStateChangedListeners.add(l);
+        }
+    }
+
+    private void removeOnPlayerStateChangedListener(final OnPlayerStateChangedListener l) {
+        synchronized (onPlayerStateChangedListeners) {
+            onPlayerStateChangedListeners.remove(l);
+        }
+    }
+
     public void startPlayback() {
         mediaPlayer.start();
-        notification.start();
-        RadioWidget.onPlay(getApplicationContext());
+        notifyPlayerStateChanged(PlayerState.PLAYING);
     }
 
     private void stopPlayback() {
@@ -331,25 +345,34 @@ public class AnfoService extends Service {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
                 isPaused = true;
-            }
-            stopBufferingTask = Executors.newSingleThreadScheduledExecutor()
-                    .schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            synchronized (mediaPlayer) {
-                                if (isPaused) {
-                                    mediaPlayer.stop();
-                                    mediaPlayer.reset();
-                                    isPaused = false;
+                stopBufferingTask = Executors.newSingleThreadScheduledExecutor()
+                        .schedule(new Runnable() {
+                            @Override
+                            public void run() {
+                                synchronized (mediaPlayer) {
+                                    if (isPaused) {
+                                        mediaPlayer.stop();
+                                        mediaPlayer.reset();
+                                        isPaused = false;
+                                    }
                                 }
                             }
-                        }
-                    }, 60, TimeUnit.SECONDS);
+                        }, 60, TimeUnit.SECONDS);
+            } else {
+                mediaPlayer.reset();
+                isPaused = false;
+            }
         }
+        notifyPlayerStateChanged(PlayerState.STOPPED);
         // if hide notification when not playing
         notification.stop();
-        RadioWidget.onStop(getApplicationContext());
         AnfoService.this.stopSelf(); // make service bound
+    }
+
+    enum PlayerState {
+        STOPPED,
+        CACHING,
+        PLAYING
     }
 
     public interface OnSongChangeListener {
@@ -362,6 +385,10 @@ public class AnfoService extends Service {
 
     public interface OnSongPosChangedListener {
         void onSongPosChanged(int songPosTime, String songPosTimeStr, double nowPlayingPos);
+    }
+
+    public interface OnPlayerStateChangedListener {
+        void onPlayerStateChanged(PlayerState state);
     }
 
     public class AnfoInterface extends Binder {
@@ -381,8 +408,47 @@ public class AnfoService extends Service {
             AnfoService.this.removeOnSongPosChangeListener(l);
         }
 
+        public void addOnPlayerStateChangedListener(OnPlayerStateChangedListener l) {
+            AnfoService.this.addOnPlayerStateChangedListener(l);
+        }
+
+        public void removeOnPlayerStateChangedListener(OnPlayerStateChangedListener l) {
+            AnfoService.this.removeOnPlayerStateChangedListener(l);
+        }
+
         public void stopPlayback() {
             AnfoService.this.stopPlayback();
         }
+
+        public PlayerState getCurrentState() {
+            return currentState;
+        }
+    }
+
+    private abstract class CommandReceiver extends BroadcastReceiver {
+
+        CommandReceiver(Context context) {
+            register(context);
+        }
+
+        public void register(Context context) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(KEY_STOP);
+            context.registerReceiver(this, filter);
+        }
+
+        public void unregister(Context context) {
+            context.unregisterReceiver(this);
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (action.equals(KEY_STOP)) {
+                onStop(context);
+            }
+        }
+
+        public abstract void onStop(Context context);
     }
 }

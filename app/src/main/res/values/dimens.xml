@@ -7,5 +7,6 @@
     <dimen name="radio_player_height">65dp</dimen>
     <dimen name="radio_player_margin">3dp</dimen>
     <dimen name="widget_margin">8dp</dimen>
+    <dimen name="component_margin">2dp</dimen>
 
 </resources>

@@ -24,15 +24,16 @@ import org.aankor.animenforadio.api.SongInfo;
 public class RadioPlayer extends Fragment implements
         ServiceConnection,
         AnfoService.OnSongPosChangedListener,
-        AnfoService.OnSongChangeListener {
-    PlayerStateReceiver playerStateReceiver;
-    private boolean isPlaying = false;
+        AnfoService.OnSongChangeListener,
+        AnfoService.OnPlayerStateChangedListener {
+    private AnfoService.PlayerState currentState;
     private ImageView albumMiniArtView;
     private TextView songNameView;
     private ProgressBar progressView;
     private TextView progressTextView;
     private SongInfo currentSong;
     private AnfoService.AnfoInterface anfo;
+    private ImageButton playStopButton = null;
 
 
     public RadioPlayer() {
@@ -44,47 +45,38 @@ public class RadioPlayer extends Fragment implements
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         Intent main = getActivity().getIntent();
-        isPlaying = main.getBooleanExtra("isPlaying", false);
+        currentState = AnfoService.PlayerState.STOPPED;
         // Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.radio_player, container, false);
-        final ImageButton playStopButton = (ImageButton) rootView.findViewById(R.id.playStopButton);
+        playStopButton = (ImageButton) rootView.findViewById(R.id.playStopButton);
         albumMiniArtView = (ImageView) rootView.findViewById(R.id.albumMiniArtView);
         songNameView = (TextView) rootView.findViewById(R.id.songNameView);
         progressView = (ProgressBar) rootView.findViewById(R.id.progressView);
         progressTextView = (TextView) rootView.findViewById(R.id.progressTextView);
-        playStopButton.setBackgroundResource(isPlaying ? R.drawable.player_stop : R.drawable.player_play);
+        updatePlayButton();
         playStopButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                isPlaying = !isPlaying;
-                playStopButton.setBackgroundResource(isPlaying ? R.drawable.player_stop : R.drawable.player_play);
-                if (isPlaying) {
-                    getActivity().startService(new Intent(getActivity(), AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION));
-                } else {
-                    // TODO: what if service has not complete binding here
-                    anfo.stopPlayback();
+                switch (currentState) {
+                    case STOPPED:
+                        getActivity().startService(new Intent(getActivity(), AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION));
+                        break;
+                    case CACHING:
+                        anfo.stopPlayback();
+                        break;
+                    case PLAYING:
+                        anfo.stopPlayback();
+                        break;
                 }
+                updatePlayButton();
             }
         });
-        playerStateReceiver = new PlayerStateReceiver(getActivity(), new PlayerStateReceiver.Listener() {
-            @Override
-            public void onStop(Context context) {
-                isPlaying = false;
-                playStopButton.setBackgroundResource(R.drawable.player_play);
-            }
 
-            @Override
-            public void onPlay(Context context) {
-                isPlaying = true;
-                playStopButton.setBackgroundResource(R.drawable.player_stop);
-            }
-        });
         return rootView;
     }
 
     @Override
     public void onDestroyView() {
-        playerStateReceiver.unregister(getActivity());
         super.onDestroyView();
     }
 
@@ -99,7 +91,24 @@ public class RadioPlayer extends Fragment implements
         super.onStop();
         anfo.removeOnSongPosChangeListener(this);
         anfo.removeOnSongChangeListener(this);
+        anfo.removeOnPlayerStateChangedListener(this);
         getActivity().unbindService(this);
+    }
+
+    private void updatePlayButton() {
+        if (playStopButton == null)
+            return;
+        switch (currentState) {
+            case STOPPED:
+                playStopButton.setBackgroundResource(R.drawable.button_play);
+                break;
+            case CACHING:
+                playStopButton.setBackgroundResource(R.drawable.button_caching);
+                break;
+            case PLAYING:
+                playStopButton.setBackgroundResource(R.drawable.button_stop);
+                break;
+        }
     }
 
     private void updateSong(final SongInfo s, final long songEndTime) {
@@ -154,10 +163,26 @@ public class RadioPlayer extends Fragment implements
         anfo = (AnfoService.AnfoInterface) iBinder;
         anfo.addOnSongPosChangeListener(this);
         anfo.addOnSongChangeListener(this);
+        anfo.addOnPlayerStateChangedListener(this);
+        if (currentState != anfo.getCurrentState()) {
+            currentState = anfo.getCurrentState();
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    updatePlayButton();
+                }
+            });
+        }
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
         anfo = null;
+    }
+
+    @Override
+    public void onPlayerStateChanged(AnfoService.PlayerState state) {
+        currentState = state;
+        updatePlayButton();
     }
 }

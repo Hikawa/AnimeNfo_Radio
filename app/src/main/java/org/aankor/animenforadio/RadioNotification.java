@@ -20,7 +20,8 @@ import org.aankor.animenforadio.api.SongInfo;
 public class RadioNotification implements
         ServiceConnection,
         AnfoService.OnSongPosChangedListener,
-        AnfoService.OnSongChangeListener {
+        AnfoService.OnSongChangeListener,
+        AnfoService.OnPlayerStateChangedListener {
     /**
      * The unique identifier for this type of notification.
      */
@@ -42,7 +43,7 @@ public class RadioNotification implements
 
         views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
         views.setOnClickPendingIntent(R.id.playStopButton,
-                PendingIntent.getBroadcast(context, 0, new Intent(PlayerStateReceiver.KEY_STOP), 0));
+                PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
 
         builder = new Notification.Builder(context)
                 .setContent(views)
@@ -62,6 +63,7 @@ public class RadioNotification implements
         if (anfo != null) {
             anfo.removeOnSongPosChangeListener(this);
             anfo.removeOnSongChangeListener(this);
+            anfo.removeOnPlayerStateChangedListener(this);
             context.unbindService(this);
             anfo = null;
         }
@@ -118,10 +120,27 @@ public class RadioNotification implements
         anfo = (AnfoService.AnfoInterface) iBinder;
         anfo.addOnSongPosChangeListener(this);
         anfo.addOnSongChangeListener(this);
+        anfo.addOnPlayerStateChangedListener(this);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
         anfo = null;
+    }
+
+    @Override
+    public void onPlayerStateChanged(AnfoService.PlayerState state) {
+        switch (state) {
+            case STOPPED:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                break;
+            case CACHING:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
+                break;
+            case PLAYING:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                break;
+        }
+        show(builder.build());
     }
 }

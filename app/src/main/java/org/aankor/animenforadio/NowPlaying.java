@@ -22,7 +22,6 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
     private TextView artistView;
     private TextView titleView;
     private TextView albumView;
-    private TextView albumTypeView;
     private TextView seriesView;
     private TextView genreView;
     private ImageView albumArtView;
@@ -32,7 +31,7 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         final View rootView = inflater.inflate(R.layout.now_playing, container, false);
 
         artistView = (TextView) rootView.findViewById(R.id.artistView);
@@ -74,6 +73,7 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
 
         ratingTextView.setText("Rating: " + s.getRating() + ".\n" + s.getFavourites() + " users have added this song to their favourites.");
     }
+
     @Override
     public void onFetchingStarted() {
 

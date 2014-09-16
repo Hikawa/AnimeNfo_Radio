@@ -1,15 +1,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:layout_margin="3dp"
     android:orientation="horizontal"
+    android:padding="5dp"
     tools:context="org.aankor.animenforadio.RadioPlayer">
 
     <ImageView
         android:id="@+id/albumMiniArtView"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:layout_margin="@dimen/component_margin"
         android:adjustViewBounds="true"
         android:contentDescription="Album Art"
         android:src="@drawable/example_picture" />
@@ -18,38 +20,42 @@
         android:id="@+id/playStopButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="@drawable/player_stop" />
+        android:layout_margin="@dimen/component_margin"
+        android:background="@drawable/button_caching" />
 
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="@dimen/component_margin"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/songNameView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:text="New text" />
+            android:layout_margin="@dimen/component_margin"
+            android:layout_weight="1" />
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/component_margin">
 
             <ProgressBar
                 android:id="@+id/progressView"
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true" />
+                android:layout_alignParentBottom="true"
+                android:layout_margin="@dimen/component_margin" />
 
             <TextView
                 android:id="@+id/progressTextView"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center|center_vertical"
-                android:text="new text" />
+                android:layout_margin="@dimen/component_margin" />
         </FrameLayout>
     </LinearLayout>
 </LinearLayout>
