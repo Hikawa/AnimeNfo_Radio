@@ -107,6 +107,7 @@ public class RadioPlayer extends Fragment implements
         switch (currentState) {
             case STOPPED:
                 playStopButton.setBackgroundResource(R.drawable.button_play);
+                playStopButton.setEnabled(true);
                 break;
             case CACHING:
                 playStopButton.setBackgroundResource(R.drawable.button_caching);
@@ -119,6 +120,10 @@ public class RadioPlayer extends Fragment implements
                 break;
             case NO_AUDIO_FOCUS:
                 playStopButton.setBackgroundResource(R.drawable.button_no_focus);
+                break;
+            case NO_NETWORK:
+                playStopButton.setBackgroundResource(R.drawable.button_play);
+                playStopButton.setEnabled(false);
                 break;
         }
     }

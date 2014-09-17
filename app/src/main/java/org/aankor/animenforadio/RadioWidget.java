@@ -54,6 +54,7 @@ public class RadioWidget extends AppWidgetProvider {
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 intent = PendingIntent.getService(context, 0,
                         new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                views.setBoolean(R.id.playStopButton, "setEnabled", true);
                 break;
             case CACHING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
@@ -74,6 +75,10 @@ public class RadioWidget extends AppWidgetProvider {
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
+                break;
+            case NO_NETWORK:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                views.setBoolean(R.id.playStopButton, "setEnabled", false);
                 break;
         }
 

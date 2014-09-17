@@ -133,6 +133,7 @@ public class RadioNotification implements
         switch (state) {
             case STOPPED:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                views.setBoolean(R.id.playStopButton, "setEnabled", true);
                 break;
             case CACHING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
@@ -145,6 +146,10 @@ public class RadioNotification implements
                 break;
             case NO_AUDIO_FOCUS:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
+                break;
+            case NO_NETWORK:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                views.setBoolean(R.id.playStopButton, "setEnabled", false);
                 break;
         }
         show(builder.build());

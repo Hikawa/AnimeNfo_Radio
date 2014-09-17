@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.IBinder;
@@ -50,6 +52,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private boolean isPaused = false;
     private long playerStartedTime = 0;
     private ScheduledFuture<?> stopBufferingTask = null;
+    private BroadcastReceiver connectivityReceiver = null;
 
 
     public AnfoService() {
@@ -63,6 +66,25 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     @Override
     public void onCreate() {
         super.onCreate();
+        if (!isOnline())
+            currentState = PlayerState.NO_NETWORK;
+        connectivityReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+                if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                    final boolean online = !intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
+                    if ((currentState == PlayerState.NO_NETWORK) && online) {
+                        notifyPlayerStateChanged(PlayerState.STOPPED);
+                    } else if (!online) {
+                        interruptPlayback(PlayerState.NO_NETWORK);
+                    }
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        registerReceiver(connectivityReceiver, filter);
         wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, "anfo_stream_lock");
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -77,7 +99,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
-                wifiLock.release();
+                Toast.makeText(getApplicationContext(), "Radio player error", Toast.LENGTH_LONG).show();
+                interruptPlayback(PlayerState.STOPPED);
                 return false;
             }
         });
@@ -153,13 +176,10 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     public void onDestroy() {
         if (processorHandle != null)
             processorHandle.cancel(false);
-        if (mediaPlayer.isPlaying())
-            mediaPlayer.stop();
-        notification.stop();
+        interruptPlayback(PlayerState.STOPPED);
         mediaPlayer.release();
-        wifiLock.release();
-        audioManager.abandonAudioFocus(this);
         commandReceiver.unregister(getApplicationContext());
+        unregisterReceiver(connectivityReceiver);
         RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
         super.onDestroy();
@@ -178,6 +198,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void process() {
+        if (currentState == PlayerState.NO_NETWORK)
+            return;
         long currentTime = new Date().getTime();
         EnumSet<WebsiteGate.Subscription> fetchNow = EnumSet.noneOf(WebsiteGate.Subscription.class);
         for (SortedMap.Entry<WebsiteGate.Subscription, Long> e : refreshSchedule.entrySet()) {
@@ -261,6 +283,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void notifyPlayerStateChanged(PlayerState state) {
+        if (currentState == state)
+            return;
         currentState = state;
         synchronized (onPlayerStateChangedListeners) {
             for (OnPlayerStateChangedListener l : onPlayerStateChangedListeners)
@@ -383,7 +407,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         if (AudioManager.AUDIOFOCUS_REQUEST_FAILED ==
                 audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)) {
 
-            Toast.makeText(getApplicationContext(), "Your audio system is busy now. Try to start playing later", Toast.LENGTH_LONG)
+            Toast.makeText(getApplicationContext(), "Your audio system is busy now. Try to start playing anfo radio later", Toast.LENGTH_LONG)
                     .show();
             synchronized (mediaPlayer) {
                 mediaPlayer.reset();
@@ -409,6 +433,17 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         AnfoService.this.stopSelf(); // make service bound
     }
 
+    private void interruptPlayback(PlayerState state) {
+        audioManager.abandonAudioFocus(AnfoService.this);
+        if (wifiLock.isHeld())
+            wifiLock.release();
+        isPaused = false;
+        mediaPlayer.reset();
+        notifyPlayerStateChanged(state);
+        notification.stop();
+        AnfoService.this.stopSelf(); // make service bound
+    }
+
     @Override
     public void onAudioFocusChange(int focus) {
         switch (focus) {
@@ -421,6 +456,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 break;
 
             case AudioManager.AUDIOFOCUS_LOSS:
+                Toast.makeText(getApplicationContext(), "Your audio system becomes busy for a long time. Try to start playing anfo radio later", Toast.LENGTH_LONG)
+                        .show();
                 stopPlayback(); // resume me manually
                 break;
 
@@ -435,6 +472,12 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 break;
 
         }
+    }
+
+    public boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo info = cm.getActiveNetworkInfo();
+        return (info != null) && info.isConnected();
     }
 
     enum PlayerState {
