@@ -69,7 +69,7 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
         if (s.getArtBmp() != null)
             albumArtView.setImageBitmap(s.getArtBmp());
         else
-            albumArtView.setImageResource(R.drawable.example_picture);
+            albumArtView.setImageResource(R.drawable.image_not_found);
 
         ratingTextView.setText("Rating: " + s.getRating() + ".\n" + s.getFavourites() + " users have added this song to their favourites.");
     }

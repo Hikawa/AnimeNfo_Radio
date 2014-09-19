@@ -156,7 +156,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         if (action.equals(START_PLAYBACK_ACTION)) {
             resumePlayback();
             notification.start();
-            return START_STICKY;
+            return START_NOT_STICKY;
         } else if (action.equals(REFRESH_WIDGET_ACTION)) {
             refreshWidgetCommand();
             return START_NOT_STICKY;

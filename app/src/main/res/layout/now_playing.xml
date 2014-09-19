@@ -26,9 +26,10 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2"
-            android:contentDescription="Album Art" />
+            android:contentDescription="Album Art"
+            android:src="@drawable/image_not_found" />
 
-        <TableLayout
+            <TableLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="3"

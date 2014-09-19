@@ -15,7 +15,7 @@
         android:layout_height="@dimen/radio_player_height"
         android:adjustViewBounds="true"
         android:contentDescription="Album Art"
-        android:src="@drawable/example_picture" />
+        android:src="@drawable/image_not_found" />
 
     <ImageButton
         android:id="@+id/playStopButton"
