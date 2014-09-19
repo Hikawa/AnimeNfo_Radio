@@ -26,25 +26,37 @@ public class RadioWidget extends AppWidgetProvider {
     private static long songEndTime;
     private static RemoteViews views;
     private static AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
+    private static AppWidgetManager appWidgetManager = null;
+
+    private static AppWidgetManager getAppWidgetManager(Context context) {
+        if (appWidgetManager == null)
+            appWidgetManager = AppWidgetManager.getInstance(context);
+        return appWidgetManager;
+    }
 
     private static PendingIntent makeAnfoIntent(Context context) {
         return anfoIntent = PendingIntent.getService(context, 0,
                 new Intent(context, AnfoService.class).setAction(AnfoService.REFRESH_WIDGET_ACTION), 0);
     }
 
+    private static int[] getWidgetIds(Context context) {
+        return getAppWidgetManager(context).getAppWidgetIds(new ComponentName(context, RadioWidget.class));
+    }
+
     // called from service
-    public static void updateWidget(Context context, SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
+    public static void updateWidget(Context context, SongInfo s,
+                                    long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
         RadioWidget.songEndTime = songEndTime;
         views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
         views.setTextViewText(R.id.titleView, s.getTitle());
         views.setTextViewText(R.id.artistView, s.getArtist());
         views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
-        updateWidget(context);
+        updateWidget(context, getWidgetIds(context));
         if (isEnabled && !doAnfoSendsUpdates)
             startAlarm(context);
     }
 
-    private static void updateWidget(Context context) {
+    private static void updateWidget(Context context, int[] ids) {
         // TODO: multithreading issues
         if (views == null)
             views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
@@ -88,10 +100,7 @@ public class RadioWidget extends AppWidgetProvider {
         }
 
         views.setOnClickPendingIntent(R.id.playStopButton, intent);
-
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
-        int[] ids = appWidgetManager.getAppWidgetIds(new ComponentName(context, RadioWidget.class));
-        appWidgetManager.updateAppWidget(ids, views);
+        getAppWidgetManager(context).updateAppWidget(ids, views);
     }
 
     public static void notifyAnfoStartsToSendUpdates() {
@@ -118,13 +127,12 @@ public class RadioWidget extends AppWidgetProvider {
 
     public static void onPlayerStateChanged(Context context, AnfoService.PlayerState state) {
         currentState = state;
-        updateWidget(context);
+        updateWidget(context, getWidgetIds(context));
     }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        // There may be multiple widgets active, so update all of them
-        // appWidgetManager.updateAppWidget(appWidgetIds, views);
+        updateWidget(context, appWidgetIds);
     }
 
     @Override
@@ -135,7 +143,7 @@ public class RadioWidget extends AppWidgetProvider {
         alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         try {
             if (doAnfoSendsUpdates) // Has updated earlier
-                updateWidget(context);
+                updateWidget(context, getWidgetIds(context));
             else
                 makeAnfoIntent(context).send();
         } catch (PendingIntent.CanceledException e) {

@@ -137,35 +137,42 @@ public class RadioNotification implements
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 intent = PendingIntent.getService(context, 0,
                         new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                builder.setOngoing(false);
                 break;
             case CACHING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
+                builder.setOngoing(true);
                 break;
             case PLAYING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
+                builder.setOngoing(true);
                 break;
             case QUIET:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
+                builder.setOngoing(true);
                 break;
             case NO_AUDIO_FOCUS:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
                 intent = PendingIntent.getBroadcast(context, 0,
                         new Intent(AnfoService.KEY_STOP), 0);
+                builder.setOngoing(true);
                 break;
             case NO_NETWORK:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 views.setBoolean(R.id.playStopButton, "setEnabled", false);
+                builder.setOngoing(false);
                 break;
             case HEADSET_REMOVED:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_headset);
                 intent = PendingIntent.getService(context, 0,
                         new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                builder.setOngoing(false);
                 break;
         }
         views.setOnClickPendingIntent(R.id.playStopButton, intent);

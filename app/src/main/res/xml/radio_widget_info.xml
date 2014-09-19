@@ -3,6 +3,6 @@
     android:initialLayout="@layout/radio_widget"
     android:minHeight="56dp"
     android:minWidth="272dp"
-    android:previewImage="@drawable/example_appwidget_preview"
+    android:previewImage="@drawable/anfo_radio_widget"
     android:resizeMode="horizontal"
     android:updatePeriodMillis="0"></appwidget-provider>

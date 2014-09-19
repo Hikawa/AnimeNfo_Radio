@@ -34,13 +34,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="@color/textColor" />
+            android:textColor="@color/textColor"
+            android:textSize="15dp" />
 
         <TextView
             android:id="@+id/artistView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:clickable="false" />
+            android:textColor="@color/textColor"
+            android:textSize="12dp" />
 
     </LinearLayout>
 </LinearLayout>
