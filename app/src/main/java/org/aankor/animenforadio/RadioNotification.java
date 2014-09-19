@@ -38,10 +38,10 @@ public class RadioNotification implements
         this.service = s;
         this.context = s.getApplicationContext();
         Intent main = new Intent(context, Main.class);
-        main.putExtra("isPlaying", true);
         main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
         views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
+        // default action
         views.setOnClickPendingIntent(R.id.playStopButton,
                 PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
 
@@ -130,28 +130,45 @@ public class RadioNotification implements
 
     @Override
     public void onPlayerStateChanged(AnfoService.PlayerState state) {
+        PendingIntent intent = null;
+        views.setBoolean(R.id.playStopButton, "setEnabled", true);
         switch (state) {
             case STOPPED:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
-                views.setBoolean(R.id.playStopButton, "setEnabled", true);
+                intent = PendingIntent.getService(context, 0,
+                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
                 break;
             case CACHING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
                 break;
             case PLAYING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
                 break;
             case QUIET:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
                 break;
             case NO_AUDIO_FOCUS:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
+                intent = PendingIntent.getBroadcast(context, 0,
+                        new Intent(AnfoService.KEY_STOP), 0);
                 break;
             case NO_NETWORK:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 views.setBoolean(R.id.playStopButton, "setEnabled", false);
                 break;
+            case HEADSET_REMOVED:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_headset);
+                intent = PendingIntent.getService(context, 0,
+                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                break;
         }
+        views.setOnClickPendingIntent(R.id.playStopButton, intent);
         show(builder.build());
     }
 }

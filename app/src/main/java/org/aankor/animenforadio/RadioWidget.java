@@ -49,12 +49,12 @@ public class RadioWidget extends AppWidgetProvider {
         if (views == null)
             views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
         PendingIntent intent = null;
+        views.setBoolean(R.id.playStopButton, "setEnabled", true);
         switch (currentState) {
             case STOPPED:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 intent = PendingIntent.getService(context, 0,
                         new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
-                views.setBoolean(R.id.playStopButton, "setEnabled", true);
                 break;
             case CACHING:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
@@ -79,6 +79,11 @@ public class RadioWidget extends AppWidgetProvider {
             case NO_NETWORK:
                 views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
                 views.setBoolean(R.id.playStopButton, "setEnabled", false);
+                break;
+            case HEADSET_REMOVED:
+                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_headset);
+                intent = PendingIntent.getService(context, 0,
+                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
                 break;
         }
 

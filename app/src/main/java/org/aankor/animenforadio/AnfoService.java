@@ -52,7 +52,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private boolean isPaused = false;
     private long playerStartedTime = 0;
     private ScheduledFuture<?> stopBufferingTask = null;
-    private BroadcastReceiver connectivityReceiver = null;
+    private BroadcastReceiver systemReceiver = null;
 
 
     public AnfoService() {
@@ -68,7 +68,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         super.onCreate();
         if (!isOnline())
             currentState = PlayerState.NO_NETWORK;
-        connectivityReceiver = new BroadcastReceiver() {
+        systemReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 final String action = intent.getAction();
@@ -79,12 +79,23 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     } else if (!online) {
                         interruptPlayback(PlayerState.NO_NETWORK);
                     }
+                } else if (action.equals(AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
+                    if (mediaPlayer.isPlaying()) {
+                        pausePlayback();
+                        notifyPlayerStateChanged(PlayerState.HEADSET_REMOVED);
+                    }
+                } else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
+                    if ((intent.getIntExtra("state", 0) == 1) && (currentState == PlayerState.HEADSET_REMOVED)) {
+                        resumePlayback();
+                    }
                 }
             }
         };
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-        registerReceiver(connectivityReceiver, filter);
+        filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        filter.addAction(Intent.ACTION_HEADSET_PLUG);
+        registerReceiver(systemReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, "anfo_stream_lock");
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -179,7 +190,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         interruptPlayback(PlayerState.STOPPED);
         mediaPlayer.release();
         commandReceiver.unregister(getApplicationContext());
-        unregisterReceiver(connectivityReceiver);
+        unregisterReceiver(systemReceiver);
         RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
         super.onDestroy();
@@ -378,6 +389,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void pausePlayback() {
+        audioManager.abandonAudioFocus(this);
         synchronized (mediaPlayer) {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
@@ -392,6 +404,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                                         mediaPlayer.reset();
                                         wifiLock.release();
                                         isPaused = false;
+                                        // if hide notification when not playing
+                                        notification.stop();
+                                        AnfoService.this.stopSelf(); // make service bound
                                     }
                                 }
                             }
@@ -399,6 +414,10 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             } else {
                 mediaPlayer.reset();
                 isPaused = false;
+                if (wifiLock.isHeld())
+                    wifiLock.release();
+                notification.stop();
+                AnfoService.this.stopSelf(); // make service bound
             }
         }
     }
@@ -425,12 +444,13 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void stopPlayback() {
-        audioManager.abandonAudioFocus(this);
         pausePlayback();
         notifyPlayerStateChanged(PlayerState.STOPPED);
+        /*
         // if hide notification when not playing
         notification.stop();
         AnfoService.this.stopSelf(); // make service bound
+        */
     }
 
     private void interruptPlayback(PlayerState state) {
@@ -449,7 +469,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         switch (focus) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 if (currentState == PlayerState.QUIET) {
-                    mediaPlayer.setVolume(1.0f, 1.0f);
                     notifyPlayerStateChanged(PlayerState.PLAYING);
                 } else
                     resumePlayback();
@@ -467,7 +486,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 break;
 
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
-                mediaPlayer.setVolume(0.1f, 0.1f);
                 notifyPlayerStateChanged(PlayerState.QUIET);
                 break;
 
@@ -486,7 +504,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         PLAYING,
         QUIET,
         NO_NETWORK,
-        NO_AUDIO_FOCUS
+        NO_AUDIO_FOCUS,
+        HEADSET_REMOVED
     }
 
     public interface OnSongChangeListener {

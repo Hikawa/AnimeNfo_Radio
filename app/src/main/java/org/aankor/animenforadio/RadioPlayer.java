@@ -73,6 +73,9 @@ public class RadioPlayer extends Fragment implements
                     case NO_AUDIO_FOCUS:
                         anfo.stopPlayback();
                         break;
+                    case HEADSET_REMOVED:
+                        getActivity().startService(new Intent(getActivity(), AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION));
+                        break;
                 }
                 updatePlayButton();
             }
@@ -104,10 +107,10 @@ public class RadioPlayer extends Fragment implements
     private void updatePlayButton() {
         if (playStopButton == null)
             return;
+        playStopButton.setEnabled(true);
         switch (currentState) {
             case STOPPED:
                 playStopButton.setBackgroundResource(R.drawable.button_play);
-                playStopButton.setEnabled(true);
                 break;
             case CACHING:
                 playStopButton.setBackgroundResource(R.drawable.button_caching);
@@ -124,6 +127,9 @@ public class RadioPlayer extends Fragment implements
             case NO_NETWORK:
                 playStopButton.setBackgroundResource(R.drawable.button_play);
                 playStopButton.setEnabled(false);
+                break;
+            case HEADSET_REMOVED:
+                playStopButton.setBackgroundResource(R.drawable.button_no_headset);
                 break;
         }
     }
