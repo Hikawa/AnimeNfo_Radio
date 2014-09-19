@@ -95,7 +95,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
         filter.addAction(Intent.ACTION_HEADSET_PLUG);
-        registerReceiver(systemReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        registerReceiver(systemReceiver, filter);
         wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
                 .createWifiLock(WifiManager.WIFI_MODE_FULL, "anfo_stream_lock");
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
