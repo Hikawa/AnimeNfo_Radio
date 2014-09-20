@@ -6,4 +6,12 @@
         android:key="currentSongTracking"
         android:summary="Use network for refreshing current song info while radio is not playing"
         android:title="Refresh while not playing" />
+
+    <ListPreference
+        android:defaultValue="3"
+        android:entries="@array/pauseLengthEntries"
+        android:entryValues="@array/pauseLengthEntryValues"
+        android:key="pauseLength"
+        android:summary="When player after pressing stop will stop buffering"
+        android:title="Pause length" />
 </PreferenceScreen>

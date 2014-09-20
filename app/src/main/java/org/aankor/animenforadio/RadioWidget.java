@@ -20,12 +20,12 @@ import java.util.Date;
 public class RadioWidget extends AppWidgetProvider {
 
     private static volatile boolean doAnfoSendsUpdates = false;
-    private static AlarmManager alarmManager = null;
-    private static PendingIntent anfoIntent = null;
+    private static volatile AlarmManager alarmManager = null;
+    private static volatile PendingIntent anfoIntent = null;
     private static long songEndTime;
-    private static RemoteViews views;
-    private static AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
-    private static AppWidgetManager appWidgetManager = null;
+    private static volatile RemoteViews views;
+    private static volatile AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
+    private static volatile AppWidgetManager appWidgetManager = null;
 
     private static AppWidgetManager getAppWidgetManager(Context context) {
         if (appWidgetManager == null)

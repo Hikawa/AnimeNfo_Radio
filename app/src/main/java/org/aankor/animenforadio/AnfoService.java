@@ -78,7 +78,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     if ((currentState == PlayerState.NO_NETWORK) && online) {
                         notifyPlayerStateChanged(PlayerState.STOPPED);
                     } else if (!online) {
-                        interruptPlayback(PlayerState.NO_NETWORK);
+                        interruptPlayback();
+                        notifyPlayerStateChanged(PlayerState.NO_NETWORK);
                     }
                 } else if (action.equals(AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
                     if (mediaPlayer.isPlaying()) {
@@ -112,7 +113,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 Toast.makeText(getApplicationContext(), "Radio player error", Toast.LENGTH_LONG).show();
-                interruptPlayback(PlayerState.STOPPED);
+                interruptPlayback();
+                notifyPlayerStateChanged(PlayerState.STOPPED);
                 return false;
             }
         });
@@ -193,7 +195,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     public void onDestroy() {
         if (processorHandle != null)
             processorHandle.cancel(false);
-        interruptPlayback(PlayerState.STOPPED);
+        interruptPlayback();
+        notifyPlayerStateChanged(PlayerState.STOPPED);
         mediaPlayer.release();
         commandReceiver.unregister(getApplicationContext());
         unregisterReceiver(systemReceiver);
@@ -419,6 +422,12 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
 
     private void pausePlayback() {
         audioManager.abandonAudioFocus(this);
+        int pauseLength = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                .getString("pauseLength", "60"));
+        if (pauseLength == 0) {
+            interruptPlayback();
+            return;
+        }
         synchronized (mediaPlayer) {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
@@ -439,7 +448,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                                     }
                                 }
                             }
-                        }, 60, TimeUnit.SECONDS);
+                        }, pauseLength, TimeUnit.SECONDS);
             } else {
                 mediaPlayer.reset();
                 isPaused = false;
@@ -482,13 +491,12 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         */
     }
 
-    private void interruptPlayback(PlayerState state) {
+    private void interruptPlayback() {
         audioManager.abandonAudioFocus(AnfoService.this);
         if (wifiLock.isHeld())
             wifiLock.release();
         isPaused = false;
         mediaPlayer.reset();
-        notifyPlayerStateChanged(state);
         notification.stop();
         AnfoService.this.stopSelf(); // make service bound
     }
