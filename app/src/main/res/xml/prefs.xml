@@ -8,10 +8,18 @@
         android:title="Refresh while not playing" />
 
     <ListPreference
-        android:defaultValue="3"
+        android:defaultValue="60"
         android:entries="@array/pauseLengthEntries"
         android:entryValues="@array/pauseLengthEntryValues"
         android:key="pauseLength"
         android:summary="When player after pressing stop will stop buffering"
         android:title="Pause length" />
+
+    <ListPreference
+        android:defaultValue="http://itori.animenfo.com:443"
+        android:entries="@array/radioStreamEntries"
+        android:entryValues="@array/radioStreamEntryValues"
+        android:key="radioStream"
+        android:summary="Choose stream server and format"
+        android:title="Radio stream url" />
 </PreferenceScreen>

@@ -18,4 +18,20 @@
         <item>600</item>
         <item>1800</item>
     </string-array>
+    <string-array name="radioStreamEntries">
+        <item>itori:443 (San Jose, USA) - 192kbps MP3</item>
+        <item>momori:8000 (Pembroke, Ontario) - 192kbps MP3</item>
+        <!-- Not supported
+        <item>emaru:443 (San Jose, USA) - 32kbps AAC+</item>
+        <item>momori:8080 (Pembroke, Ontario) - 32kbps AAC+</item>
+        -->
+    </string-array>
+    <string-array name="radioStreamEntryValues">
+        <item>http://itori.animenfo.com:443</item>
+        <item>http://momori.animenfo.com:8000</item>
+        <!-- Not supported
+        <item>http://emaru.animenfo.com:443</item>
+        <item>http://momori.animenfo.com:8080</item>
+        -->
+    </string-array>
 </resources>
