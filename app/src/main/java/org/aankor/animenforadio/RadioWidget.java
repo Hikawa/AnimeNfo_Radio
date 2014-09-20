@@ -20,7 +20,6 @@ import java.util.Date;
 public class RadioWidget extends AppWidgetProvider {
 
     private static volatile boolean doAnfoSendsUpdates = false;
-    private static volatile boolean isEnabled = false;
     private static AlarmManager alarmManager = null;
     private static PendingIntent anfoIntent = null;
     private static long songEndTime;
@@ -43,6 +42,10 @@ public class RadioWidget extends AppWidgetProvider {
         return getAppWidgetManager(context).getAppWidgetIds(new ComponentName(context, RadioWidget.class));
     }
 
+    private static boolean isEnabled(Context context) {
+        return getWidgetIds(context).length > 0;
+    }
+
     // called from service
     public static void updateWidget(Context context, SongInfo s,
                                     long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
@@ -52,7 +55,7 @@ public class RadioWidget extends AppWidgetProvider {
         views.setTextViewText(R.id.artistView, s.getArtist());
         views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
         updateWidget(context, getWidgetIds(context));
-        if (isEnabled && !doAnfoSendsUpdates)
+        if (isEnabled(context) && !doAnfoSendsUpdates)
             startAlarm(context);
     }
 
@@ -110,11 +113,17 @@ public class RadioWidget extends AppWidgetProvider {
 
     public static void notifyAnfoStopsToSendUpdates(Context context) {
         doAnfoSendsUpdates = false;
-        if (isEnabled)
+        if (isEnabled(context))
             startAlarm(context);
     }
 
     public static void startAlarm(Context context) {
+        if (alarmManager == null)
+            alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+
+        if (anfoIntent != null)
+            alarmManager.cancel(anfoIntent);
+
         alarmManager.set(AlarmManager.RTC, Math.max(songEndTime + 500, new Date().getTime() + 30000),
                 makeAnfoIntent(context));
     }
@@ -123,6 +132,7 @@ public class RadioWidget extends AppWidgetProvider {
         if (alarmManager == null)
             return;
         alarmManager.cancel(anfoIntent);
+        anfoIntent = null;
     }
 
     public static void onPlayerStateChanged(Context context, AnfoService.PlayerState state) {
@@ -140,28 +150,18 @@ public class RadioWidget extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        updateWidget(context, appWidgetIds);
-    }
-
-    @Override
-    public void onEnabled(Context context) {
-        isEnabled = true;
-        super.onEnabled(context);
-
-        alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        try {
-            if (doAnfoSendsUpdates) // Has updated earlier
-                updateWidget(context, getWidgetIds(context));
-            else
+        if (doAnfoSendsUpdates) {
+            updateWidget(context, appWidgetIds);
+        } else
+            try {
                 makeAnfoIntent(context).send();
-        } catch (PendingIntent.CanceledException e) {
-            e.printStackTrace();
-        }
+            } catch (PendingIntent.CanceledException e) {
+                e.printStackTrace();
+            }
     }
 
     @Override
     public void onDisabled(Context context) {
-        isEnabled = false;
         stopAlarm();
         super.onDisabled(context);
     }
