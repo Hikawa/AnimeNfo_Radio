@@ -190,6 +190,10 @@ public class WebsiteGate {
         }
     }
 
+    public void unsetCurrentSong() {
+        currentSong = null;
+    }
+
     public enum Subscription {
         CURRENT_SONG,
         QUEUE

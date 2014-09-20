@@ -8,6 +8,9 @@
         <item name="android:textColor">@color/textColor</item>
         <item name="android:imageButtonStyle">@style/Button</item>
         <item name="android:layout_margin">@dimen/component_margin</item>
+        <item name="android:itemTextAppearance">
+            @android:style/TextAppearance.Holo.Widget.IconMenu.Item
+        </item>
     </style>
 
     <style name="Panel">

@@ -130,6 +130,14 @@ public class RadioWidget extends AppWidgetProvider {
         updateWidget(context, getWidgetIds(context));
     }
 
+    public static void songUntracked(Context context) {
+        stopAlarm();
+        views.setTextViewText(R.id.titleView, context.getResources().getText(R.string.unknown));
+        views.setTextViewText(R.id.artistView, context.getResources().getText(R.string.unknown));
+        views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
+        getAppWidgetManager(context).updateAppWidget(getWidgetIds(context), views);
+    }
+
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         updateWidget(context, appWidgetIds);

@@ -138,7 +138,7 @@ public class RadioPlayer extends Fragment implements
         if (s.getArtBmp() != null)
             albumMiniArtView.setImageBitmap(s.getArtBmp());
         else
-            albumMiniArtView.setImageResource(R.drawable.example_picture);
+            albumMiniArtView.setImageResource(R.drawable.image_not_found);
         songNameView.setText(s.getArtist() + " - " + s.getTitle());
     }
 
@@ -179,6 +179,19 @@ public class RadioPlayer extends Fragment implements
     @Override
     public void onSongUnknown() {
 
+    }
+
+    @Override
+    public void onSongUntracked() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                albumMiniArtView.setImageResource(R.drawable.image_not_found);
+                songNameView.setText(getResources().getText(R.string.unknown));
+                progressView.setProgress(0);
+                progressTextView.setText("");
+            }
+        });
     }
 
     @Override

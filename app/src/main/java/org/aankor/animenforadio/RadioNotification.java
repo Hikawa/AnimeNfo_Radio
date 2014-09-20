@@ -80,7 +80,10 @@ public class RadioNotification implements
 
     void updateSong(SongInfo s, long songEndTime) {
         views.setTextViewText(R.id.songNameView, s.getArtist() + " - " + s.getTitle());
-        views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        if (s.getArtBmp() != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        else
+            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
     }
 
     void updateTiming(int songPosTime, String songPosTimeStr, int pos) {
@@ -113,6 +116,15 @@ public class RadioNotification implements
     @Override
     public void onSongUnknown() {
 
+    }
+
+    @Override
+    public void onSongUntracked() {
+        views.setTextViewText(R.id.songNameView, service.getResources().getText(R.string.unknown));
+        views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
+        views.setProgressBar(R.id.progressView, 100, 0, false);
+        views.setTextViewText(R.id.progressTextView, "");
+        show(builder.build());
     }
 
     @Override

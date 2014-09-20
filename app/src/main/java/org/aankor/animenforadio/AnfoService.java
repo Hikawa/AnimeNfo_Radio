@@ -13,6 +13,7 @@ import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import org.aankor.animenforadio.api.SongInfo;
@@ -148,6 +149,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             }
         });
         */
+        PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.prefs, false);
     }
 
     @Override
@@ -165,6 +167,10 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void refreshWidgetCommand() {
+        if (dropCurrentSongTracking()) {
+            RadioWidget.songUntracked(getApplicationContext());
+            return;
+        }
         scheduler.execute(new Runnable() {
             @Override
             public void run() {
@@ -208,6 +214,12 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }, 0, 1, TimeUnit.SECONDS);
     }
 
+    public boolean dropCurrentSongTracking() {
+        return !mediaPlayer.isPlaying() &&
+                !PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                        .getBoolean("currentSongTracking", true);
+    }
+
     private void process() {
         if (currentState == PlayerState.NO_NETWORK)
             return;
@@ -219,6 +231,14 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 fetchNow.add(e.getKey());
             }
         }
+        if (dropCurrentSongTracking()) {
+            if (fetchNow.contains(WebsiteGate.Subscription.CURRENT_SONG) && gate.getCurrentSong() != null) {
+                gate.unsetCurrentSong();
+                notifySongUntracked();
+            }
+            fetchNow = EnumSet.noneOf(WebsiteGate.Subscription.class);
+        }
+
         notifyFetchStarted(fetchNow);
         gate.fetch(fetchNow);
         currentTime = (new Date()).getTime();
@@ -267,6 +287,15 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             }
         }
         fetchingCompletionNotified = true;
+    }
+
+    private void notifySongUntracked() {
+        synchronized (onSongChangeListeners) {
+            for (OnSongChangeListener l : onSongChangeListeners) {
+                l.onSongUntracked();
+            }
+        }
+        RadioWidget.songUntracked(getApplicationContext());
     }
 
     private void notifySongPosChanged() {
@@ -514,6 +543,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         void onSongChanged(SongInfo s, long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos);
 
         void onSongUnknown();
+
+        void onSongUntracked();
     }
 
     public interface OnSongPosChangedListener {

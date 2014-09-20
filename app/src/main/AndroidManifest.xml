@@ -21,6 +21,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".Settings"
+            android:theme="@android:style/Theme.Holo.Light.DarkActionBar" />
 
         <receiver android:name=".RadioWidget">
             <intent-filter>

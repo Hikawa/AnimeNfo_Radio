@@ -94,6 +94,25 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
 
     }
 
+    @Override
+    public void onSongUntracked() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                artistView.setText(getResources().getText(R.string.unknown));
+                titleView.setText(getResources().getText(R.string.unknown));
+                albumView.setText(getResources().getText(R.string.unknown));
+                seriesView.setText(getResources().getText(R.string.unknown));
+                genreView.setText(getResources().getText(R.string.unknown));
+
+                albumArtView.setImageResource(R.drawable.image_not_found);
+
+                ratingTextView.setText("");
+
+            }
+        });
+    }
+
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
