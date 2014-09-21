@@ -44,7 +44,6 @@ public class RadioPlayer extends Fragment implements
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Intent main = getActivity().getIntent();
         currentState = AnfoService.PlayerState.STOPPED;
         // Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.radio_player, container, false);
@@ -82,11 +81,6 @@ public class RadioPlayer extends Fragment implements
         });
 
         return rootView;
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
     }
 
     @Override

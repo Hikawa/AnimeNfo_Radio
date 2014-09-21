@@ -121,16 +121,17 @@ public class SongInfo {
 
     @Override
     public boolean equals(Object o) {
-        SongInfo other = (SongInfo) o;
-        if (other == null)
+        if (!(o instanceof SongInfo))
             return false;
-        return other.artist.equals(artist) &&
-                other.title.equals(title) &&
-                other.album.equals(album) &&
-                other.albumType.equals(albumType) &&
-                other.series.equals(series) &&
-                other.genre.equals(genre) &&
-                other.artUrl.equals(artUrl);
+        SongInfo other = (SongInfo) o;
+        return other != null
+                && other.artist.equals(artist)
+                && other.title.equals(title)
+                && other.album.equals(album)
+                && other.albumType.equals(albumType)
+                && other.series.equals(series)
+                && other.genre.equals(genre)
+                && other.artUrl.equals(artUrl);
     }
 
     public void fetchAlbumArt() {

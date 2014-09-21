@@ -117,7 +117,7 @@ public class RadioWidget extends AppWidgetProvider {
             startAlarm(context);
     }
 
-    public static void startAlarm(Context context) {
+    private static void startAlarm(Context context) {
         if (alarmManager == null)
             alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
@@ -128,7 +128,7 @@ public class RadioWidget extends AppWidgetProvider {
                 makeAnfoIntent(context));
     }
 
-    public static void stopAlarm() {
+    private static void stopAlarm() {
         if (alarmManager == null)
             return;
         alarmManager.cancel(anfoIntent);

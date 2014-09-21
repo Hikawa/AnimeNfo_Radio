@@ -36,19 +36,18 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     public static final String KEY_STOP = "org.aankor.animenforadio.AnfoService.stopRadio";
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
-    ScheduledFuture processorHandle = null;
-    WifiManager.WifiLock wifiLock = null;
-    private boolean fetchingCompletionNotified;
-    private SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    private final SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    private final WebsiteGate gate = new WebsiteGate();
+    private final MediaPlayer mediaPlayer = new MediaPlayer();
+    private final ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
+    private final ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
+    private final ArrayList<OnPlayerStateChangedListener> onPlayerStateChangedListeners = new ArrayList<OnPlayerStateChangedListener>();
+    private ScheduledFuture processorHandle = null;
+    private WifiManager.WifiLock wifiLock = null;
     private AudioManager audioManager = null;
     private PlayerState currentState = PlayerState.STOPPED;
-    private WebsiteGate gate = new WebsiteGate();
     private CommandReceiver commandReceiver;
-    private MediaPlayer mediaPlayer = new MediaPlayer();
     private RadioNotification notification;
-    private ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
-    private ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
-    private ArrayList<OnPlayerStateChangedListener> onPlayerStateChangedListeners = new ArrayList<OnPlayerStateChangedListener>();
     private boolean isSchedulerActive = false;
     private boolean isPaused = false;
     private long playerStartedTime = 0;
@@ -228,7 +227,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         long currentTime = new Date().getTime();
         EnumSet<WebsiteGate.Subscription> fetchNow = EnumSet.noneOf(WebsiteGate.Subscription.class);
         for (SortedMap.Entry<WebsiteGate.Subscription, Long> e : refreshSchedule.entrySet()) {
-            long time = e.getValue().longValue();
+            long time = e.getValue();
             if ((time == 0l) || (time < currentTime)) {
                 fetchNow.add(e.getKey());
             }
@@ -288,7 +287,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     break;
             }
         }
-        fetchingCompletionNotified = true;
     }
 
     private void notifySongUntracked() {
@@ -321,7 +319,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     break;
             }
         }
-        fetchingCompletionNotified = false;
     }
 
     private void notifyPlayerStateChanged(PlayerState state) {
@@ -362,7 +359,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void removeOnSongChangeListener(final OnSongChangeListener l) {
-        boolean last = false;
+        boolean last;
         synchronized (onSongChangeListeners) {
             onSongChangeListeners.remove(l);
             last = onSongChangeListeners.isEmpty();

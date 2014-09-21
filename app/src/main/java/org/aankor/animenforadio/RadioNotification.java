@@ -29,10 +29,10 @@ public class RadioNotification implements
     private static final String NOTIFICATION_TAG = "AnfoRadio";
     private final Context context;
     private final Service service;
-    private NotificationCompat.Builder builder;
+    private final NotificationCompat.Builder builder;
+    private final RemoteViews views;
     private AnfoService.AnfoInterface anfo;
     private int lastPos;
-    private RemoteViews views;
     private SongInfo currentSong;
 
     public RadioNotification(final Service s) {

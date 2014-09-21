@@ -1,16 +1,13 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme">
-        <!-- Customize your theme here. -->
+    <style name="AppTheme" parent="@style/Theme.AppCompat">
+    <!-- Customize your theme here. -->
         <item name="android:textSize">13sp</item>
         <item name="android:windowBackground">@color/background</item>
         <item name="android:textColor">@color/textColor</item>
         <item name="android:imageButtonStyle">@style/Button</item>
         <item name="android:layout_margin">@dimen/component_margin</item>
-        <item name="android:itemTextAppearance">
-            @android:style/TextAppearance.Widget.IconMenu.Item
-        </item>
     </style>
 
     <style name="Panel">
@@ -18,9 +15,9 @@
     </style>
 
     <style name="Button" parent="@android:style/Widget.ImageButton">
-        <item name="android:background">@drawable/button_play</item>
         <item name="android:padding">15dp</item>
     </style>
 
-    <style name="Settings" parent="@android:style/Theme" />
+    <style name="Settings" parent="@style/Theme.AppCompat" />
+
 </resources>

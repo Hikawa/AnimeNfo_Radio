@@ -16,7 +16,7 @@ public class Settings extends FragmentActivity {
                 new PrefsFragment()).commit();
     }
 
-    public static class PrefsFragment extends PreferenceFragment {
+    private static class PrefsFragment extends PreferenceFragment {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
