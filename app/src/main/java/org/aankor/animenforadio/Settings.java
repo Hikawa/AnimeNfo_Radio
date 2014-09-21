@@ -1,18 +1,18 @@
 package org.aankor.animenforadio;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.preference.ListPreference;
-import android.preference.PreferenceFragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.preference.PreferenceFragment;
 
 /**
  * Created by aankor on 20.09.14.
  */
-public class Settings extends Activity {
+public class Settings extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getFragmentManager().beginTransaction().replace(android.R.id.content,
+        getSupportFragmentManager().beginTransaction().replace(android.R.id.content,
                 new PrefsFragment()).commit();
     }
 

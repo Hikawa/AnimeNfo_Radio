@@ -1,7 +1,7 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme">
+    <style name="AppTheme" parent="android:Theme.DeviceDefault">
         <!-- Customize your theme here. -->
         <item name="android:textSize">13sp</item>
         <item name="android:windowBackground">@color/background</item>
@@ -9,7 +9,7 @@
         <item name="android:imageButtonStyle">@style/Button</item>
         <item name="android:layout_margin">@dimen/component_margin</item>
         <item name="android:itemTextAppearance">
-            @android:style/TextAppearance.Widget.IconMenu.Item
+            @android:style/TextAppearance.DeviceDefault.Widget.IconMenu.Item
         </item>
     </style>
 
@@ -22,5 +22,6 @@
         <item name="android:padding">15dp</item>
     </style>
 
-    <style name="Settings" parent="@android:style/Theme" />
+    <style name="Settings" parent="@android:style/Theme.DeviceDefault" />
+
 </resources>

@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.widget.RemoteViews;
 
 import org.aankor.animenforadio.api.SongInfo;
@@ -28,7 +29,7 @@ public class RadioNotification implements
     private static final String NOTIFICATION_TAG = "AnfoRadio";
     private final Context context;
     private final Service service;
-    private Notification.Builder builder;
+    private NotificationCompat.Builder builder;
     private AnfoService.AnfoInterface anfo;
     private int lastPos;
     private RemoteViews views;
@@ -45,7 +46,7 @@ public class RadioNotification implements
         views.setOnClickPendingIntent(R.id.playStopButton,
                 PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
 
-        builder = new Notification.Builder(context)
+        builder = new NotificationCompat.Builder(context)
                 .setContent(views)
                 .setContentIntent(PendingIntent.getActivity(context, 0, main, 0))
                 .setTicker("AnimeNfo Radio Player")

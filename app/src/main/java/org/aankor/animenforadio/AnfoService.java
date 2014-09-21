@@ -36,11 +36,11 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     public static final String KEY_STOP = "org.aankor.animenforadio.AnfoService.stopRadio";
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
-    boolean fetchingCompletionNotified;
     ScheduledFuture processorHandle = null;
-    SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
     WifiManager.WifiLock wifiLock = null;
-    AudioManager audioManager = null;
+    private boolean fetchingCompletionNotified;
+    private SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    private AudioManager audioManager = null;
     private PlayerState currentState = PlayerState.STOPPED;
     private WebsiteGate gate = new WebsiteGate();
     private CommandReceiver commandReceiver;
@@ -204,7 +204,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         super.onDestroy();
     }
 
-    public void activateScheduler() {
+    private void activateScheduler() {
         if (isSchedulerActive)
             return;
         isSchedulerActive = true;
@@ -216,7 +216,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }, 0, 1, TimeUnit.SECONDS);
     }
 
-    public boolean dropCurrentSongTracking() {
+    private boolean dropCurrentSongTracking() {
         return !mediaPlayer.isPlaying() &&
                 !PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                         .getBoolean("currentSongTracking", true);
@@ -460,7 +460,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }
     }
 
-    public void startPlayback() {
+    private void startPlayback() {
         if (AudioManager.AUDIOFOCUS_REQUEST_FAILED ==
                 audioManager.requestAudioFocus(this, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)) {
 
@@ -529,7 +529,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }
     }
 
-    public boolean isOnline() {
+    private boolean isOnline() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         NetworkInfo info = cm.getActiveNetworkInfo();
         return (info != null) && info.isConnected();

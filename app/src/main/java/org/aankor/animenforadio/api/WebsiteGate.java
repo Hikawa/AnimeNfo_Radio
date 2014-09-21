@@ -52,7 +52,7 @@ public class WebsiteGate {
     }
 
     private void fetchCookies() throws IOException {
-        if (phpSessID.isEmpty()) {
+        if (phpSessID.equals("")) {
             URL url = new URL("https://www.animenfo.com/radio/index.php");
             HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
             con.setRequestMethod("GET");

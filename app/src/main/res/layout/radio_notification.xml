@@ -13,7 +13,7 @@
         android:layout_height="match_parent"
         android:layout_margin="@dimen/component_margin"
         android:adjustViewBounds="true"
-        android:contentDescription="Album Art"
+        android:contentDescription="@string/album_art"
         android:src="@drawable/image_not_found" />
 
     <ImageButton
@@ -47,7 +47,6 @@
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
                 android:layout_margin="@dimen/component_margin" />
 
             <TextView

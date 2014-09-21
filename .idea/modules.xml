@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/AnimeNfoRadio.iml" filepath="$PROJECT_DIR$/AnimeNfoRadio.iml" />
+      <module fileurl="file://$PROJECT_DIR$/android-support-v4-preferencefragment/android-support-v4-preferencefragment.iml" filepath="$PROJECT_DIR$/android-support-v4-preferencefragment/android-support-v4-preferencefragment.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

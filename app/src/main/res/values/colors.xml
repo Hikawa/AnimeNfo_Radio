@@ -3,6 +3,4 @@
     <color name="background">#150441</color>
     <color name="foreground">#d1e6ec</color>
     <color name="textColor">#313d7b</color>
-    <color name="buttonDefault">#38246d</color>
-    <color name="buttonPressed">#5c4e81</color>
 </resources>

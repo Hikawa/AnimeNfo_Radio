@@ -135,7 +135,7 @@ public class SongInfo {
 
     public void fetchAlbumArt() {
         try {
-            if (artUrl.isEmpty())
+            if (artUrl.equals(""))
                 return;
             URL url = new URL(artUrl.replace(" ", "%20"));
             artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());

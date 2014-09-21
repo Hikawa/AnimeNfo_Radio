@@ -13,7 +13,7 @@
         android:layout_width="60dp"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
-        android:contentDescription="Album Art"
+        android:contentDescription="@string/album_art"
         android:scaleType="centerInside"
         android:src="@drawable/image_not_found" />
 
@@ -36,14 +36,14 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:textColor="@color/textColor"
-            android:textSize="15dp" />
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/artistView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textColor="@color/textColor"
-            android:textSize="12dp" />
+            android:textSize="12sp" />
 
     </LinearLayout>
 </LinearLayout>

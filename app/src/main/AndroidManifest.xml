@@ -23,7 +23,7 @@
         </activity>
         <activity
             android:name=".Settings"
-            android:theme="@android:style/Theme.Holo.Light.DarkActionBar" />
+            android:theme="@style/Settings" />
 
         <receiver android:name=".RadioWidget">
             <intent-filter>

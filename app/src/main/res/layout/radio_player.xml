@@ -14,7 +14,7 @@
         android:layout_width="@dimen/radio_player_height"
         android:layout_height="@dimen/radio_player_height"
         android:adjustViewBounds="true"
-        android:contentDescription="Album Art"
+        android:contentDescription="@string/album_art"
         android:src="@drawable/image_not_found" />
 
     <ImageButton
@@ -43,8 +43,7 @@
         android:id="@+id/progressView"
         style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true" />
+                android:layout_height="wrap_content" />
 
             <TextView
                 android:id="@+id/progressTextView"

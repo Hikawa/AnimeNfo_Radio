@@ -1,7 +1,7 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="android:Theme">
+    <style name="AppTheme" parent="android:Theme.Holo">
         <!-- Customize your theme here. -->
         <item name="android:textSize">13sp</item>
         <item name="android:windowBackground">@color/background</item>
@@ -22,5 +22,5 @@
         <item name="android:padding">15dp</item>
     </style>
 
-    <style name="Settings" parent="@android:style/Theme" />
+    <style name="Settings" parent="@android:style/Theme.Holo" />
 </resources>

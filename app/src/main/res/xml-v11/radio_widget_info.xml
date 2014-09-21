@@ -3,4 +3,5 @@
     android:initialLayout="@layout/radio_widget"
     android:minHeight="56dp"
     android:minWidth="272dp"
+    android:previewImage="@drawable/anfo_radio_widget"
     android:updatePeriodMillis="0"></appwidget-provider>
