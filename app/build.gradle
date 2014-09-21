@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 16
+    compileSdkVersion 17
     buildToolsVersion '20.0.0'
 
     defaultConfig {
         applicationId "org.aankor.animenforadio"
         minSdkVersion 16
-        targetSdkVersion 16
+        targetSdkVersion 17
         versionCode 1
         versionName "1.0"
     }

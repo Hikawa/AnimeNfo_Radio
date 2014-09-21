@@ -2,6 +2,7 @@ package org.aankor.animenforadio;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.preference.ListPreference;
 import android.preference.PreferenceFragment;
 
 /**
@@ -20,6 +21,12 @@ public class Settings extends Activity {
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.prefs);
+            ListPreference pauseLengthPref = (ListPreference) findPreference("pauseLength");
+            if (pauseLengthPref.getValue() == null)
+                pauseLengthPref.setValueIndex(3);
+            ListPreference radioStreamPref = (ListPreference) findPreference("radioStream");
+            if (radioStreamPref.getValue() == null)
+                radioStreamPref.setValueIndex(0);
         }
     }
 }

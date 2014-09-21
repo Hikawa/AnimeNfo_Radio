@@ -10,10 +10,11 @@
 
     <ImageView
         android:id="@+id/albumMiniArtView"
-        android:layout_width="wrap_content"
+        android:layout_width="60dp"
         android:layout_height="match_parent"
         android:adjustViewBounds="true"
         android:contentDescription="Album Art"
+        android:scaleType="centerInside"
         android:src="@drawable/image_not_found" />
 
     <ImageButton

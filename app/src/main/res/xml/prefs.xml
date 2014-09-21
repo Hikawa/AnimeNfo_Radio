@@ -4,11 +4,11 @@
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="currentSongTracking"
-        android:summary="Use network for refreshing current song info while radio is not playing"
+        android:summaryOff="Refresh current song info always"
+        android:summaryOn="Refresh current song info while radio is not playing"
         android:title="Refresh while not playing" />
 
     <ListPreference
-        android:defaultValue="60"
         android:entries="@array/pauseLengthEntries"
         android:entryValues="@array/pauseLengthEntryValues"
         android:key="pauseLength"
@@ -16,7 +16,6 @@
         android:title="Pause length" />
 
     <ListPreference
-        android:defaultValue="http://itori.animenfo.com:443"
         android:entries="@array/radioStreamEntries"
         android:entryValues="@array/radioStreamEntryValues"
         android:key="radioStream"

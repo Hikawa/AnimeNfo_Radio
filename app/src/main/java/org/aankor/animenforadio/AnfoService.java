@@ -151,7 +151,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             }
         });
         */
-        PreferenceManager.setDefaultValues(getApplicationContext(), R.xml.prefs, false);
     }
 
     @Override

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialKeyguardLayout="@layout/radio_widget"
+    android:initialLayout="@layout/radio_widget"
+    android:minHeight="56dp"
+    android:minWidth="272dp"
+    android:previewImage="@drawable/anfo_radio_widget"
+    android:resizeMode="horizontal"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="keyguard|home_screen"></appwidget-provider>
