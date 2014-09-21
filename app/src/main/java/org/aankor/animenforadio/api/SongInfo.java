@@ -137,7 +137,7 @@ public class SongInfo {
         try {
             if (artUrl.isEmpty())
                 return;
-            URL url = new URL(artUrl);
+            URL url = new URL(artUrl.replace(" ", "%20"));
             artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
         } catch (MalformedURLException e) {
             e.printStackTrace();
