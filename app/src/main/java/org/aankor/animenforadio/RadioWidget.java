@@ -42,7 +42,7 @@ public class RadioWidget extends AppWidgetProvider {
         return getAppWidgetManager(context).getAppWidgetIds(new ComponentName(context, RadioWidget.class));
     }
 
-    private static boolean isEnabled(Context context) {
+    public static boolean isEnabled(Context context) {
         return getWidgetIds(context).length > 0;
     }
 

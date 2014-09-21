@@ -79,23 +79,32 @@ public class RadioPlayer extends Fragment implements
                 updatePlayButton();
             }
         });
+        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
 
         return rootView;
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
+    public void onDestroyView() {
         anfo.removeOnSongPosChangeListener(this);
         anfo.removeOnSongChangeListener(this);
         anfo.removeOnPlayerStateChangedListener(this);
         getActivity().unbindService(this);
+        super.onDestroyView();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (anfo != null)
+            anfo.activityResumed();
+    }
+
+    @Override
+    public void onStop() {
+        if (anfo != null)
+            anfo.activityPaused();
+        super.onStop();
     }
 
     private void updatePlayButton() {
@@ -194,6 +203,7 @@ public class RadioPlayer extends Fragment implements
         anfo.addOnSongPosChangeListener(this);
         anfo.addOnSongChangeListener(this);
         anfo.addOnPlayerStateChangedListener(this);
+        anfo.activityResumed();
         if (currentState != anfo.getCurrentState()) {
             currentState = anfo.getCurrentState();
             getActivity().runOnUiThread(new Runnable() {

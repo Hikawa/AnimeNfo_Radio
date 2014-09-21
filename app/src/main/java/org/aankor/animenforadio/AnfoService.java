@@ -53,6 +53,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private long playerStartedTime = 0;
     private ScheduledFuture<?> stopBufferingTask = null;
     private BroadcastReceiver systemReceiver = null;
+    private volatile boolean activityPaused = false;
 
 
     public AnfoService() {
@@ -221,8 +222,14 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                         .getBoolean("currentSongTracking", true);
     }
 
+    private boolean isSleeping() {
+        return !mediaPlayer.isPlaying() && !isPaused
+                && activityPaused
+                && !RadioWidget.isEnabled(getApplicationContext());
+    }
+
     private void process() {
-        if (currentState == PlayerState.NO_NETWORK)
+        if ((currentState == PlayerState.NO_NETWORK) || isSleeping())
             return;
         long currentTime = new Date().getTime();
         EnumSet<WebsiteGate.Subscription> fetchNow = EnumSet.noneOf(WebsiteGate.Subscription.class);
@@ -591,6 +598,14 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
 
         public PlayerState getCurrentState() {
             return currentState;
+        }
+
+        public void activityResumed() {
+            activityPaused = false;
+        }
+
+        public void activityPaused() {
+            activityPaused = true;
         }
     }
 
