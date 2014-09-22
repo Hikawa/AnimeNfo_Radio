@@ -34,10 +34,10 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     public static final String START_PLAYBACK_ACTION = "org.aankor.animenforadio.AnfoService.startPlayback";
     public static final String REFRESH_WIDGET_ACTION = "org.aankor.animenforadio.AnfoService.stopPlayback";
     public static final String KEY_STOP = "org.aankor.animenforadio.AnfoService.stopRadio";
+    private static final SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
+    private static final WebsiteGate gate = new WebsiteGate();
     private final ScheduledExecutorService scheduler =
             Executors.newSingleThreadScheduledExecutor();
-    private final SortedMap<WebsiteGate.Subscription, Long> refreshSchedule = new TreeMap<WebsiteGate.Subscription, Long>();
-    private final WebsiteGate gate = new WebsiteGate();
     private final MediaPlayer mediaPlayer = new MediaPlayer();
     private final ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private final ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
@@ -347,11 +347,11 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }
         if (first)
             RadioWidget.notifyAnfoStartsToSendUpdates();
-        final boolean wasFirst = first;
+        final boolean needFetch = first && gate.getCurrentSong() == null;
         scheduler.execute(new Runnable() {
             @Override
             public void run() {
-                if (wasFirst) {
+                if (needFetch) {
                     refreshSchedule.put(WebsiteGate.Subscription.CURRENT_SONG, 0l); // schedule now
                 } else if (gate.getCurrentSong() != null)
                     l.onSongChanged(
