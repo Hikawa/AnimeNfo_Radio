@@ -129,7 +129,7 @@ public class WebsiteGate {
     }
 
     private JSONObject request(EnumSet<Subscription> subscriptions) throws IOException, JSONException {
-        fetchCookies();
+        // fetchCookies();
 
         // TODO: fetch peice by piece
         URL url = new URL("https://www.animenfo.com/radio/index.php?t=" + (new Date()).getTime());
@@ -141,7 +141,8 @@ public class WebsiteGate {
         con.setRequestProperty("Accept", "application/json");
         con.setRequestProperty("Accept-Encoding", "gzip, deflate");
         con.setRequestProperty("Content-Type", "application/json");
-        con.setRequestProperty("Cookie", "PHPSESSID=" + phpSessID);
+        if (!phpSessID.equals(""))
+            con.setRequestProperty("Cookie", "PHPSESSID=" + phpSessID);
         con.setRequestProperty("Host", "www.animenfo.com");
         con.setRequestProperty("Referer", "https://www.animenfo.com/radio/nowplaying.php");
         con.setRequestProperty("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Firefox/31.0 Iceweasel/31.1.0");
@@ -164,7 +165,7 @@ public class WebsiteGate {
         }
         rd.close();
 
-        updateCookies(con);
+        // updateCookies(con);
         return new JSONObject(response.toString());
 
     }

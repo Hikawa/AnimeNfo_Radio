@@ -47,7 +47,6 @@ public class RadioNotification implements
                 PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
 
         builder = new NotificationCompat.Builder(context)
-                .setContent(views)
                 .setContentIntent(PendingIntent.getActivity(context, 0, main, 0))
                 .setTicker("AnimeNfo Radio Player")
                 .setSmallIcon(R.drawable.ic_launcher)
@@ -71,7 +70,8 @@ public class RadioNotification implements
         cancel();
     }
 
-    private void show(final Notification notification) {
+    private void show(Notification notification) {
+        notification.contentView = views;
         service.startForeground(NOTIFICATION_TAG.hashCode(), notification);
     }
 
