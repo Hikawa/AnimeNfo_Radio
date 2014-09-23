@@ -246,11 +246,11 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         if (fetchNow.contains(WebsiteGate.Subscription.CURRENT_SONG)) {
             final SongInfo song = gate.getCurrentSong();
 
-            boolean separateThread = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                    .getBoolean("imageInSeparateThread", false);
+            boolean imageTogether = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                    .getBoolean("imageTogether", true);
 
             if (song.getArtBmp() == null)
-                if (separateThread) {
+                if (!imageTogether) {
                     imageDownloader.execute(new Runnable() {
                         @Override
                         public void run() {

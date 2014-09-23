@@ -9,11 +9,11 @@
         android:title="Refresh while not playing" />
 
     <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="imageInSeparateThread"
-        android:summaryOff="Fetch image with other song info"
-        android:summaryOn="Fetch image after other song info"
-        android:title="Separate thread for image downloading" />
+        android:defaultValue="true"
+        android:key="imageTogether"
+        android:summaryOff="Update album cover independently from song info"
+        android:summaryOn="Update album cover together with song info"
+        android:title="Update image with info" />
 
     <ListPreference
         android:entries="@array/pauseLengthEntries"
