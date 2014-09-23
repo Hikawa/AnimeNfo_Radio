@@ -22,7 +22,7 @@ public class RadioWidget extends AppWidgetProvider {
     private static volatile boolean doAnfoSendsUpdates = false;
     private static volatile AlarmManager alarmManager = null;
     private static volatile PendingIntent anfoIntent = null;
-    private static long songEndTime;
+    private static long songEndTime = 0;
     private static volatile RemoteViews views;
     private static volatile AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
     private static volatile AppWidgetManager appWidgetManager = null;

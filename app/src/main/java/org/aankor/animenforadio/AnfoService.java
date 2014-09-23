@@ -412,8 +412,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 } else {
                     mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
                     try {
-                        mediaPlayer.setDataSource(PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                                .getString("radioStream", "http://itori.animenfo.com:443"));
+                        String url = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                                .getString("radioStream", "http://itori.animenfo.com:443");
+                        mediaPlayer.setDataSource(url);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
