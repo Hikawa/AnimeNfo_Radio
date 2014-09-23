@@ -168,23 +168,13 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void refreshWidgetCommand() {
-        if (dropCurrentSongTracking()) {
-            RadioWidget.songUntracked(getApplicationContext());
-            return;
-        }
         scheduler.execute(new Runnable() {
             @Override
             public void run() {
-                gate.fetch(EnumSet.of(WebsiteGate.Subscription.CURRENT_SONG));
-                if (gate.getCurrentSong() != null) {
-                    RadioWidget.updateWidget(
-                            getApplicationContext(),
-                            gate.getCurrentSong(),
-                            gate.getCurrentSongEndTime(),
-                            gate.getCurrentSongPosTime(),
-                            gate.getCurrentSongPosTimeStr(),
-                            gate.getCurrentSongPosPercent());
-                }
+                if (!refreshSchedule.containsKey(WebsiteGate.Subscription.CURRENT_SONG))
+                    refreshSchedule.put(WebsiteGate.Subscription.CURRENT_SONG, 0l); // schedule now
+                process();
+                RadioWidget.serviceCommandExecuted(getApplicationContext());
                 stopSelf();
             }
         });
@@ -199,7 +189,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         mediaPlayer.release();
         commandReceiver.unregister(getApplicationContext());
         unregisterReceiver(systemReceiver);
-        RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
 
         super.onDestroy();
     }
@@ -345,8 +334,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             first = onSongChangeListeners.isEmpty();
             onSongChangeListeners.add(l);
         }
-        if (first)
-            RadioWidget.notifyAnfoStartsToSendUpdates();
         final boolean needFetch = first && gate.getCurrentSong() == null;
         scheduler.execute(new Runnable() {
             @Override
@@ -366,13 +353,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void removeOnSongChangeListener(final OnSongChangeListener l) {
-        boolean last;
         synchronized (onSongChangeListeners) {
             onSongChangeListeners.remove(l);
-            last = onSongChangeListeners.isEmpty();
         }
-        if (last)
-            RadioWidget.notifyAnfoStopsToSendUpdates(getApplicationContext());
     }
 
     private void addOnSongPosChangeListener(final OnSongPosChangedListener l) {

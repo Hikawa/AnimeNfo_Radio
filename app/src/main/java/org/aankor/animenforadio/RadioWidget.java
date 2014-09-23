@@ -11,6 +11,7 @@ import android.widget.RemoteViews;
 
 import org.aankor.animenforadio.api.SongInfo;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 
@@ -19,13 +20,13 @@ import java.util.Date;
  */
 public class RadioWidget extends AppWidgetProvider {
 
-    private static volatile boolean doAnfoSendsUpdates = false;
     private static volatile AlarmManager alarmManager = null;
     private static volatile PendingIntent anfoIntent = null;
     private static long songEndTime = 0;
     private static volatile RemoteViews views;
     private static volatile AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
     private static volatile AppWidgetManager appWidgetManager = null;
+    private static volatile ArrayList<Integer> pendingIds = new ArrayList<Integer>();
 
     private static AppWidgetManager getAppWidgetManager(Context context) {
         if (appWidgetManager == null)
@@ -55,7 +56,7 @@ public class RadioWidget extends AppWidgetProvider {
         views.setTextViewText(R.id.artistView, s.getArtist());
         views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
         updateWidget(context, getWidgetIds(context));
-        if (isEnabled(context) && !doAnfoSendsUpdates)
+        if (isEnabled(context))
             startAlarm(context);
     }
 
@@ -106,18 +107,7 @@ public class RadioWidget extends AppWidgetProvider {
         getAppWidgetManager(context).updateAppWidget(ids, views);
     }
 
-    public static void notifyAnfoStartsToSendUpdates() {
-        doAnfoSendsUpdates = true;
-        stopAlarm();
-    }
-
-    public static void notifyAnfoStopsToSendUpdates(Context context) {
-        doAnfoSendsUpdates = false;
-        if (isEnabled(context))
-            startAlarm(context);
-    }
-
-    private static void startAlarm(Context context) {
+    private static synchronized void startAlarm(Context context) {
         if (alarmManager == null)
             alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
@@ -128,7 +118,7 @@ public class RadioWidget extends AppWidgetProvider {
                 makeAnfoIntent(context));
     }
 
-    private static void stopAlarm() {
+    private static synchronized void stopAlarm() {
         if (alarmManager == null)
             return;
         alarmManager.cancel(anfoIntent);
@@ -141,23 +131,35 @@ public class RadioWidget extends AppWidgetProvider {
     }
 
     public static void songUntracked(Context context) {
-        stopAlarm();
         views.setTextViewText(R.id.titleView, context.getResources().getText(R.string.unknown));
         views.setTextViewText(R.id.artistView, context.getResources().getText(R.string.unknown));
         views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         getAppWidgetManager(context).updateAppWidget(getWidgetIds(context), views);
+        stopAlarm();
+    }
+
+    static public void serviceCommandExecuted(Context context) {
+        synchronized (pendingIds) {
+            int[] ids = new int[pendingIds.size()];
+            for (int i = 0; i < ids.length; i++) {
+                ids[i] = pendingIds.get(i);
+            }
+            updateWidget(context, ids);
+            pendingIds.clear();
+        }
     }
 
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
-        if (doAnfoSendsUpdates) {
-            updateWidget(context, appWidgetIds);
-        } else
-            try {
-                makeAnfoIntent(context).send();
-            } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
+        try {
+            synchronized (pendingIds) {
+                for (int i : appWidgetIds)
+                    pendingIds.add(i);
             }
+            makeAnfoIntent(context).send();
+        } catch (PendingIntent.CanceledException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

@@ -43,20 +43,18 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
         albumArtView = (ImageView) rootView.findViewById(R.id.albumArtView);
         ratingTextView = (TextView) rootView.findViewById(R.id.ratingTextView);
 
+        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
+
         return rootView;
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
-        getActivity().bindService(new Intent(getActivity(), AnfoService.class), this, Context.BIND_AUTO_CREATE);
-    }
+    public void onDestroyView() {
+        if (anfo != null)
+            anfo.removeOnSongChangeListener(this);
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        anfo.removeOnSongChangeListener(this);
         getActivity().unbindService(this);
+        super.onDestroyView();
     }
 
     void updateSong(final SongInfo s, final long songEndTime) {
