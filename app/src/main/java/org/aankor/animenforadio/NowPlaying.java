@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -106,6 +107,20 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
                 albumArtView.setImageResource(R.drawable.image_not_found);
 
                 ratingTextView.setText("");
+
+            }
+        });
+    }
+
+    @Override
+    public void onAlbumArtLoaded(final Bitmap artBmp) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (artBmp != null)
+                    albumArtView.setImageBitmap(artBmp);
+                else
+                    albumArtView.setImageResource(R.drawable.image_not_found);
 
             }
         });

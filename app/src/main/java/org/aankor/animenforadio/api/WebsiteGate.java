@@ -119,9 +119,7 @@ public class WebsiteGate {
         if (matcher.find())
             nowPlayingPos = Double.valueOf(matcher.group(1));
 
-        if ((currentSong == null) || !newSongInfo.getArtUrl().equals(currentSong.getArtUrl()))
-            newSongInfo.fetchAlbumArt(); // don't refresh image if song remains the same
-        else
+        if ((currentSong != null) && newSongInfo.getArtUrl().equals(currentSong.getArtUrl()))
             newSongInfo.setArtBmp(currentSong.getArtBmp());
         currentSong = newSongInfo;
         currentSongPos = new SongPos(songPosTime, songPosTimeStr, nowPlayingPos);

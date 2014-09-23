@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.widget.RemoteViews;
 
 import org.aankor.animenforadio.api.SongInfo;
@@ -54,7 +55,10 @@ public class RadioWidget extends AppWidgetProvider {
         views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
         views.setTextViewText(R.id.titleView, s.getTitle());
         views.setTextViewText(R.id.artistView, s.getArtist());
-        views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        if (s.getArtBmp() != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        else
+            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         updateWidget(context, getWidgetIds(context));
         if (isEnabled(context))
             startAlarm(context);
@@ -147,6 +151,15 @@ public class RadioWidget extends AppWidgetProvider {
             updateWidget(context, ids);
             pendingIds.clear();
         }
+    }
+
+    public static void updateAlbumArt(Context context, Bitmap artBmp) {
+        if (artBmp != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, artBmp);
+        else
+            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
+
+        updateWidget(context, getWidgetIds(context));
     }
 
     @Override

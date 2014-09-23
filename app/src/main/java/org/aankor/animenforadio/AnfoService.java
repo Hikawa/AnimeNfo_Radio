@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -42,6 +43,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private final ArrayList<OnSongChangeListener> onSongChangeListeners = new ArrayList<OnSongChangeListener>();
     private final ArrayList<OnSongPosChangedListener> onSongPosChangedListeners = new ArrayList<OnSongPosChangedListener>();
     private final ArrayList<OnPlayerStateChangedListener> onPlayerStateChangedListeners = new ArrayList<OnPlayerStateChangedListener>();
+    private final ScheduledExecutorService imageDownloader =
+            Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture processorHandle = null;
     private WifiManager.WifiLock wifiLock = null;
     private AudioManager audioManager = null;
@@ -240,15 +243,39 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         gate.fetch(fetchNow);
         currentTime = (new Date()).getTime();
 
-        if (fetchNow.contains(WebsiteGate.Subscription.CURRENT_SONG))
+        if (fetchNow.contains(WebsiteGate.Subscription.CURRENT_SONG)) {
+            final SongInfo song = gate.getCurrentSong();
+
+            boolean separateThread = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                    .getBoolean("imageInSeparateThread", false);
+
+            if (song.getArtBmp() == null)
+                if (separateThread) {
+                    imageDownloader.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            song.fetchAlbumArt();                        // if song is not changed
+                            if (song == gate.getCurrentSong()) {
+                                synchronized (onSongChangeListeners) {
+                                    for (OnSongChangeListener l : onSongChangeListeners)
+                                        l.onAlbumArtLoaded(song.getArtBmp());
+                                }
+                                RadioWidget.updateAlbumArt(getApplicationContext(), song.getArtBmp());
+                            }
+                        }
+                    });
+                } else
+                    song.fetchAlbumArt();
+
             refreshSchedule.put(WebsiteGate.Subscription.CURRENT_SONG,
                     Math.max(currentTime + 5000,
                             Math.min(gate.getCurrentSongEndTime() + 30, currentTime + 180000)));
+        }
 
         notifyFetchResult(fetchNow);
 
-        // SongPosChanged is not subscribed by enumset
         if (gate.getCurrentSong() != null) {
+            // SongPosChanged is not subscribed by enumset
             notifySongPosChanged();
         }
     }
@@ -541,6 +568,8 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         void onSongUnknown();
 
         void onSongUntracked();
+
+        void onAlbumArtLoaded(Bitmap artBmp);
     }
 
     public interface OnSongPosChangedListener {

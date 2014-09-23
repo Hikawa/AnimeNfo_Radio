@@ -8,6 +8,13 @@
         android:summaryOn="Refresh current song info while radio is not playing"
         android:title="Refresh while not playing" />
 
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="imageInSeparateThread"
+        android:summaryOff="Fetch image with other song info"
+        android:summaryOn="Fetch image after other song info"
+        android:title="Separate thread for image downloading" />
+
     <ListPreference
         android:entries="@array/pauseLengthEntries"
         android:entryValues="@array/pauseLengthEntryValues"

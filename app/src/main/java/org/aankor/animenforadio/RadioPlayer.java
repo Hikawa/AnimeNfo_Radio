@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -193,6 +194,19 @@ public class RadioPlayer extends Fragment implements
                 songNameView.setText(getResources().getText(R.string.unknown));
                 progressView.setProgress(0);
                 progressTextView.setText("");
+            }
+        });
+    }
+
+    @Override
+    public void onAlbumArtLoaded(final Bitmap artBmp) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (artBmp != null)
+                    albumMiniArtView.setImageBitmap(artBmp);
+                else
+                    albumMiniArtView.setImageResource(R.drawable.image_not_found);
             }
         });
     }

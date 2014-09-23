@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.widget.RemoteViews;
@@ -39,7 +40,9 @@ public class RadioNotification implements
         this.service = s;
         this.context = s.getApplicationContext();
         Intent main = new Intent(context, Main.class);
-        main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        main.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
         views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
         // default action
@@ -125,6 +128,15 @@ public class RadioNotification implements
         views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         views.setProgressBar(R.id.progressView, 100, 0, false);
         views.setTextViewText(R.id.progressTextView, "");
+        show(builder.build());
+    }
+
+    @Override
+    public void onAlbumArtLoaded(Bitmap artBmp) {
+        if (artBmp != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, artBmp);
+        else
+            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         show(builder.build());
     }
 
