@@ -55,8 +55,8 @@ public class RadioWidget extends AppWidgetProvider {
         views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
         views.setTextViewText(R.id.titleView, s.getTitle());
         views.setTextViewText(R.id.artistView, s.getArtist());
-        if (s.getArtBmp() != null)
-            views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        if (s.getMiniArtBmp() != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, s.getMiniArtBmp());
         else
             views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         updateWidget(context, getWidgetIds(context));

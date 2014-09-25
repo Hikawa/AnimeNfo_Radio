@@ -254,18 +254,18 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     imageDownloader.execute(new Runnable() {
                         @Override
                         public void run() {
-                            song.fetchAlbumArt();                        // if song is not changed
+                            song.fetchAlbumArt(getApplicationContext());                        // if song is not changed
                             if (song == gate.getCurrentSong()) {
                                 synchronized (onSongChangeListeners) {
                                     for (OnSongChangeListener l : onSongChangeListeners)
-                                        l.onAlbumArtLoaded(song.getArtBmp());
+                                        l.onAlbumArtLoaded(song.getArtBmp(), song.getMiniArtBmp());
                                 }
-                                RadioWidget.updateAlbumArt(getApplicationContext(), song.getArtBmp());
+                                RadioWidget.updateAlbumArt(getApplicationContext(), song.getMiniArtBmp());
                             }
                         }
                     });
                 } else
-                    song.fetchAlbumArt();
+                    song.fetchAlbumArt(getApplicationContext());
 
             refreshSchedule.put(WebsiteGate.Subscription.CURRENT_SONG,
                     Math.max(currentTime + 5000,
@@ -569,7 +569,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
 
         void onSongUntracked();
 
-        void onAlbumArtLoaded(Bitmap artBmp);
+        void onAlbumArtLoaded(Bitmap artBmp, Bitmap minArtBmp);
     }
 
     public interface OnSongPosChangedListener {

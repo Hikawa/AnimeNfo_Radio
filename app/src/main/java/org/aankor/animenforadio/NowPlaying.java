@@ -113,7 +113,7 @@ public class NowPlaying extends Fragment implements ServiceConnection, AnfoServi
     }
 
     @Override
-    public void onAlbumArtLoaded(final Bitmap artBmp) {
+    public void onAlbumArtLoaded(final Bitmap artBmp, final Bitmap miniArtBmp) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {

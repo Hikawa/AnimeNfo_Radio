@@ -139,8 +139,8 @@ public class RadioPlayer extends Fragment implements
     }
 
     private void updateSong(final SongInfo s, final long songEndTime) {
-        if (s.getArtBmp() != null)
-            albumMiniArtView.setImageBitmap(s.getArtBmp());
+        if (s.getMiniArtBmp() != null)
+            albumMiniArtView.setImageBitmap(s.getMiniArtBmp());
         else
             albumMiniArtView.setImageResource(R.drawable.image_not_found);
         songNameView.setText(s.getArtist() + " - " + s.getTitle());
@@ -199,12 +199,12 @@ public class RadioPlayer extends Fragment implements
     }
 
     @Override
-    public void onAlbumArtLoaded(final Bitmap artBmp) {
+    public void onAlbumArtLoaded(final Bitmap artBmp, final Bitmap miniArtBmp) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (artBmp != null)
-                    albumMiniArtView.setImageBitmap(artBmp);
+                if (miniArtBmp != null)
+                    albumMiniArtView.setImageBitmap(miniArtBmp);
                 else
                     albumMiniArtView.setImageResource(R.drawable.image_not_found);
             }

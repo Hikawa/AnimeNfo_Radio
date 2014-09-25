@@ -84,8 +84,8 @@ public class RadioNotification implements
 
     void updateSong(SongInfo s, long songEndTime) {
         views.setTextViewText(R.id.songNameView, s.getArtist() + " - " + s.getTitle());
-        if (s.getArtBmp() != null)
-            views.setImageViewBitmap(R.id.albumMiniArtView, s.getArtBmp());
+        if (s.getMiniArtBmp() != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, s.getMiniArtBmp());
         else
             views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
     }
@@ -132,9 +132,9 @@ public class RadioNotification implements
     }
 
     @Override
-    public void onAlbumArtLoaded(Bitmap artBmp) {
-        if (artBmp != null)
-            views.setImageViewBitmap(R.id.albumMiniArtView, artBmp);
+    public void onAlbumArtLoaded(Bitmap artBmp, Bitmap minArtBmp) {
+        if (minArtBmp != null)
+            views.setImageViewBitmap(R.id.albumMiniArtView, minArtBmp);
         else
             views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         show(builder.build());

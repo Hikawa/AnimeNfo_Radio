@@ -1,7 +1,10 @@
 package org.aankor.animenforadio.api;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -11,6 +14,7 @@ import java.net.URL;
  * Created by aankor on 04.09.14.
  */
 public class SongInfo {
+    private static int miniArtSize = 0;
     private String artist = "";
     private String title = "";
     private String album = "";
@@ -22,9 +26,9 @@ public class SongInfo {
     private String rating = "";
     private int favourites = 0;
     private int songId;
-
     private String artUrl = "";
     private Bitmap artBmp = null;
+    private Bitmap miniArtBmp = null;
 
     public SongInfo(String artist, String title, String album, String albumType, String series, String genre) {
         this.artist = artist;
@@ -33,6 +37,16 @@ public class SongInfo {
         this.albumType = albumType;
         this.series = series;
         this.genre = genre;
+    }
+
+    private static int getMiniArtSize(Context context) {
+        if (miniArtSize == 0) {
+            DisplayMetrics metrics = new DisplayMetrics();
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            wm.getDefaultDisplay().getMetrics(metrics);
+            miniArtSize = (int) (64 * metrics.density);
+        }
+        return miniArtSize;
     }
 
     public String getArtist() {
@@ -71,8 +85,9 @@ public class SongInfo {
         return artBmp;
     }
 
-    public void setArtBmp(Bitmap artBmp) {
+    public void setArtBmp(Bitmap artBmp, Bitmap miniArtBmp) {
         this.artBmp = artBmp;
+        this.miniArtBmp = miniArtBmp;
     }
 
     public int getDuration() {
@@ -119,6 +134,10 @@ public class SongInfo {
         this.songId = songId;
     }
 
+    public Bitmap getMiniArtBmp() {
+        return miniArtBmp;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof SongInfo))
@@ -134,12 +153,16 @@ public class SongInfo {
                 && other.artUrl.equals(artUrl);
     }
 
-    public void fetchAlbumArt() {
+    public void fetchAlbumArt(Context context) {
         try {
             if (artUrl.equals(""))
                 return;
             URL url = new URL(artUrl.replace(" ", "%20"));
             artBmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+            if (artBmp != null)
+                miniArtBmp = Bitmap.createScaledBitmap(artBmp, getMiniArtSize(context), getMiniArtSize(context), false);
+            else
+                miniArtBmp = null;
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {

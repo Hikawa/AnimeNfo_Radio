@@ -1,10 +1,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="3dp"
+    android:layout_height="64dp"
     android:orientation="horizontal"
-    android:padding="5dp"
     tools:context="org.aankor.animenforadio.RadioPlayer">
 
     <ImageView
@@ -19,8 +17,9 @@
     <ImageButton
         android:id="@+id/playStopButton"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_margin="@dimen/component_margin"
+        android:adjustViewBounds="true"
         android:background="@drawable/button_caching" />
 
 
@@ -33,16 +32,16 @@
         <TextView
             android:id="@+id/songNameView"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_margin="@dimen/component_margin"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content"
+            android:lines="2"
+            android:textSize="13sp" />
 
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/component_margin">
+            android:layout_gravity="bottom">
 
-            <ProgressBar
+        <ProgressBar
                 android:id="@+id/progressView"
                 style="@android:style/Widget.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
