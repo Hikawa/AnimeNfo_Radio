@@ -164,9 +164,7 @@ public class SongInfo {
             else
                 miniArtBmp = null;
         } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
         } // FileNotFoundException
     }
 

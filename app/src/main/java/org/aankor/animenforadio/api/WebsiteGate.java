@@ -177,7 +177,6 @@ public class WebsiteGate {
                     currentSongPosUpdated = updateNowPlaying(res.getString("nowplaying"));
             } catch (Exception e) {
                 currentSong = null;
-                // e.printStackTrace();
             }
         }
 

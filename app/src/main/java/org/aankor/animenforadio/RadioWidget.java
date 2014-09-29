@@ -24,7 +24,7 @@ public class RadioWidget extends AppWidgetProvider {
     private static volatile AlarmManager alarmManager = null;
     private static volatile PendingIntent anfoIntent = null;
     private static long songEndTime = 0;
-    private static volatile RemoteViews views;
+    private static volatile SongInfo currentSong = null;
     private static volatile AnfoService.PlayerState currentState = AnfoService.PlayerState.STOPPED;
     private static volatile AppWidgetManager appWidgetManager = null;
     private static volatile ArrayList<Integer> pendingIds = new ArrayList<Integer>();
@@ -52,13 +52,7 @@ public class RadioWidget extends AppWidgetProvider {
     public static void updateWidget(Context context, SongInfo s,
                                     long songEndTime, int songPosTime, String songPosTimeStr, double nowPlayingPos) {
         RadioWidget.songEndTime = songEndTime;
-        views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
-        views.setTextViewText(R.id.titleView, s.getTitle());
-        views.setTextViewText(R.id.artistView, s.getArtist());
-        if (s.getMiniArtBmp() != null)
-            views.setImageViewBitmap(R.id.albumMiniArtView, s.getMiniArtBmp());
-        else
-            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
+        currentSong = s;
         updateWidget(context, getWidgetIds(context));
         if (isEnabled(context))
             startAlarm(context);
@@ -66,48 +60,62 @@ public class RadioWidget extends AppWidgetProvider {
 
     private static void updateWidget(Context context, int[] ids) {
         // TODO: multithreading issues
-        if (views == null)
-            views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
-        PendingIntent intent = null;
-        views.setBoolean(R.id.playStopButton, "setEnabled", true);
-        switch (currentState) {
-            case STOPPED:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
-                intent = PendingIntent.getService(context, 0,
-                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
-                break;
-            case CACHING:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
-                intent = PendingIntent.getBroadcast(context, 0,
-                        new Intent(AnfoService.KEY_STOP), 0);
-                break;
-            case PLAYING:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
-                intent = PendingIntent.getBroadcast(context, 0,
-                        new Intent(AnfoService.KEY_STOP), 0);
-                break;
-            case QUIET:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
-                intent = PendingIntent.getBroadcast(context, 0,
-                        new Intent(AnfoService.KEY_STOP), 0);
-                break;
-            case NO_AUDIO_FOCUS:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
-                intent = PendingIntent.getBroadcast(context, 0,
-                        new Intent(AnfoService.KEY_STOP), 0);
-                break;
-            case NO_NETWORK:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
-                views.setBoolean(R.id.playStopButton, "setEnabled", false);
-                break;
-            case HEADSET_REMOVED:
-                views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_headset);
-                intent = PendingIntent.getService(context, 0,
-                        new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
-                break;
-        }
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
+        views = new RemoteViews(context.getPackageName(), R.layout.radio_widget);
+        if (currentSong != null) {
+            views.setTextViewText(R.id.titleView, currentSong.getTitle());
+            views.setTextViewText(R.id.artistView, currentSong.getArtist());
+            if (currentSong.getMiniArtBmp() != null)
+                views.setImageViewBitmap(R.id.albumMiniArtView, currentSong.getMiniArtBmp());
+            else
+                views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
 
-        views.setOnClickPendingIntent(R.id.playStopButton, intent);
+            PendingIntent intent = null;
+            views.setBoolean(R.id.playStopButton, "setEnabled", true);
+            switch (currentState) {
+                case STOPPED:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                    intent = PendingIntent.getService(context, 0,
+                            new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                    break;
+                case CACHING:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_caching);
+                    intent = PendingIntent.getBroadcast(context, 0,
+                            new Intent(AnfoService.KEY_STOP), 0);
+                    break;
+                case PLAYING:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                    intent = PendingIntent.getBroadcast(context, 0,
+                            new Intent(AnfoService.KEY_STOP), 0);
+                    break;
+                case QUIET:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_stop);
+                    intent = PendingIntent.getBroadcast(context, 0,
+                            new Intent(AnfoService.KEY_STOP), 0);
+                    break;
+                case NO_AUDIO_FOCUS:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_focus);
+                    intent = PendingIntent.getBroadcast(context, 0,
+                            new Intent(AnfoService.KEY_STOP), 0);
+                    break;
+                case NO_NETWORK:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_play);
+                    views.setBoolean(R.id.playStopButton, "setEnabled", false);
+                    intent = PendingIntent.getActivity(context, 0, new Intent(), 0);
+                    break;
+                case HEADSET_REMOVED:
+                    views.setInt(R.id.playStopButton, "setBackgroundResource", R.drawable.button_no_headset);
+                    intent = PendingIntent.getService(context, 0,
+                            new Intent(context, AnfoService.class).setAction(AnfoService.START_PLAYBACK_ACTION), 0);
+                    break;
+            }
+
+            views.setOnClickPendingIntent(R.id.playStopButton, intent);
+        } else {
+            views.setTextViewText(R.id.titleView, context.getResources().getText(R.string.unknown));
+            views.setTextViewText(R.id.artistView, context.getResources().getText(R.string.unknown));
+            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
+        }
         getAppWidgetManager(context).updateAppWidget(ids, views);
     }
 
@@ -135,10 +143,8 @@ public class RadioWidget extends AppWidgetProvider {
     }
 
     public static void songUntracked(Context context) {
-        views.setTextViewText(R.id.titleView, context.getResources().getText(R.string.unknown));
-        views.setTextViewText(R.id.artistView, context.getResources().getText(R.string.unknown));
-        views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
-        getAppWidgetManager(context).updateAppWidget(getWidgetIds(context), views);
+        currentSong = null;
+        updateWidget(context, getWidgetIds(context));
         stopAlarm();
     }
 
@@ -154,11 +160,6 @@ public class RadioWidget extends AppWidgetProvider {
     }
 
     public static void updateAlbumArt(Context context, Bitmap artBmp) {
-        if (artBmp != null)
-            views.setImageViewBitmap(R.id.albumMiniArtView, artBmp);
-        else
-            views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
-
         updateWidget(context, getWidgetIds(context));
     }
 
@@ -171,7 +172,6 @@ public class RadioWidget extends AppWidgetProvider {
             }
             makeAnfoIntent(context).send();
         } catch (PendingIntent.CanceledException e) {
-            e.printStackTrace();
         }
     }
 

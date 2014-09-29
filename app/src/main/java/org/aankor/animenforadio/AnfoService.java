@@ -45,6 +45,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private final ArrayList<OnPlayerStateChangedListener> onPlayerStateChangedListeners = new ArrayList<OnPlayerStateChangedListener>();
     private final ScheduledExecutorService imageDownloader =
             Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService streamSyncer =
+            Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture streamSyncerHandle = null;
     private ScheduledFuture processorHandle = null;
     private WifiManager.WifiLock wifiLock = null;
     private AudioManager audioManager = null;
@@ -86,6 +89,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                     }
                 } else if (action.equals(AudioManager.ACTION_AUDIO_BECOMING_NOISY)) {
                     if (mediaPlayer.isPlaying()) {
+                        audioManager.abandonAudioFocus(AnfoService.this);
                         pausePlayback();
                         notifyPlayerStateChanged(PlayerState.HEADSET_REMOVED);
                     }
@@ -118,7 +122,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 Toast.makeText(getApplicationContext(), "Radio player error", Toast.LENGTH_LONG).show();
                 interruptPlayback();
                 notifyPlayerStateChanged(PlayerState.STOPPED);
-                return false;
+                return true;
             }
         });
         mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
@@ -145,15 +149,15 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                 return false;
             }
         });
-        /*
-        mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
+
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
-            public void onBufferingUpdate(MediaPlayer mp, int percent) {
-                Log.i("BufferingUpdate", "" + percent);
-                Log.i("Pos", "" + mp.getCurrentPosition());
+            public void onCompletion(MediaPlayer mp) {
+                isPaused = false;
+                mediaPlayer.reset();
+                resumePlayback();
             }
         });
-        */
     }
 
     @Override
@@ -203,7 +207,11 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         processorHandle = scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                process();
+                try {
+                    process();
+                } catch (NullPointerException e) {
+                } catch (Exception e) {
+                }
             }
         }, 0, 1, TimeUnit.SECONDS);
     }
@@ -426,7 +434,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
                                 .getString("radioStream", "http://itori.animenfo.com:443");
                         mediaPlayer.setDataSource(url);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Toast.makeText(getApplicationContext(), "Radio player error", Toast.LENGTH_LONG).show();
+                        interruptPlayback();
+                        notifyPlayerStateChanged(PlayerState.STOPPED);
                     }
                     mediaPlayer.prepareAsync();
                     notifyPlayerStateChanged(PlayerState.CACHING);
@@ -436,7 +446,6 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     }
 
     private void pausePlayback() {
-        audioManager.abandonAudioFocus(this);
         int pauseLength = Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
                 .getString("pauseLength", "60"));
         if (pauseLength == 0) {
@@ -444,6 +453,9 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
             return;
         }
         synchronized (mediaPlayer) {
+            if (streamSyncerHandle != null)
+                streamSyncerHandle.cancel(false);
+
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.pause();
                 isPaused = true;
@@ -492,11 +504,20 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         }
         mediaPlayer.start();
         wifiLock.acquire();
+        streamSyncerHandle = streamSyncer.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if (mediaPlayer.isPlaying())
+                    syncStream();
+            }
+        }, 60, 60, TimeUnit.SECONDS);
+
 
         notifyPlayerStateChanged(PlayerState.PLAYING);
     }
 
     private void stopPlayback() {
+        audioManager.abandonAudioFocus(this);
         pausePlayback();
         notifyPlayerStateChanged(PlayerState.STOPPED);
         /*
@@ -513,7 +534,16 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
         isPaused = false;
         mediaPlayer.reset();
         notification.stop();
+        if (streamSyncerHandle != null)
+            streamSyncerHandle.cancel(false);
         AnfoService.this.stopSelf(); // make service bound
+    }
+
+    private void syncStream() {
+        final long newPos = new Date().getTime() - playerStartedTime;
+        final int pos = mediaPlayer.getCurrentPosition();
+        if (newPos - pos > 180000l)
+            mediaPlayer.seekTo((int) newPos);
     }
 
     @Override

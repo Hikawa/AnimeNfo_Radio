@@ -31,7 +31,7 @@ public class RadioNotification implements
     private final Context context;
     private final Service service;
     private final NotificationCompat.Builder builder;
-    private final RemoteViews views;
+    private RemoteViews views;
     private AnfoService.AnfoInterface anfo;
     private int lastPos;
     private SongInfo currentSong;
@@ -44,16 +44,20 @@ public class RadioNotification implements
                 | Intent.FLAG_ACTIVITY_CLEAR_TOP
                 | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-        views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
-        // default action
-        views.setOnClickPendingIntent(R.id.playStopButton,
-                PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
+        init();
 
         builder = new NotificationCompat.Builder(context)
                 .setContentIntent(PendingIntent.getActivity(context, 0, main, 0))
                 .setTicker("AnimeNfo Radio Player")
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setOngoing(true);
+    }
+
+    void init() {
+        views = new RemoteViews(context.getPackageName(), R.layout.radio_notification);
+        // default action
+        views.setOnClickPendingIntent(R.id.playStopButton,
+                PendingIntent.getBroadcast(context, 0, new Intent(AnfoService.KEY_STOP), 0));
     }
 
     public void start() {
@@ -83,6 +87,8 @@ public class RadioNotification implements
     }
 
     void updateSong(SongInfo s, long songEndTime) {
+        init();
+        onPlayerStateChanged(anfo.getCurrentState());
         views.setTextViewText(R.id.songNameView, s.getArtist() + " - " + s.getTitle());
         if (s.getMiniArtBmp() != null)
             views.setImageViewBitmap(R.id.albumMiniArtView, s.getMiniArtBmp());
@@ -124,6 +130,8 @@ public class RadioNotification implements
 
     @Override
     public void onSongUntracked() {
+        init();
+        onPlayerStateChanged(anfo.getCurrentState());
         views.setTextViewText(R.id.songNameView, service.getResources().getText(R.string.unknown));
         views.setImageViewResource(R.id.albumMiniArtView, R.drawable.image_not_found);
         views.setProgressBar(R.id.progressView, 100, 0, false);
@@ -146,6 +154,7 @@ public class RadioNotification implements
         anfo.addOnSongPosChangeListener(this);
         anfo.addOnSongChangeListener(this);
         anfo.addOnPlayerStateChangedListener(this);
+        onPlayerStateChanged(anfo.getCurrentState());
     }
 
     @Override
