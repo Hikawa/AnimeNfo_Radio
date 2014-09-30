@@ -250,11 +250,10 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
     private void process() {
         if ((currentState == PlayerState.NO_NETWORK) || isSleeping())
             return;
-        long currentTime = new Date().getTime();
         EnumSet<WebsiteGate.Subscription> fetchNow = EnumSet.noneOf(WebsiteGate.Subscription.class);
         for (SortedMap.Entry<WebsiteGate.Subscription, Long> e : refreshSchedule.entrySet()) {
             long time = e.getValue();
-            if ((time == 0l) || (time < currentTime)) {
+            if ((time == 0l) || (time < new Date().getTime())) {
                 fetchNow.add(e.getKey());
             }
         }
@@ -268,32 +267,34 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
 
         notifyFetchStarted(fetchNow);
         gate.fetch(fetchNow);
-        currentTime = (new Date()).getTime();
 
+        final SongInfo song = gate.getCurrentSong();
         if (fetchNow.contains(WebsiteGate.Subscription.CURRENT_SONG)) {
-            final SongInfo song = gate.getCurrentSong();
 
-            boolean imageTogether = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
-                    .getBoolean("imageTogether", true);
+            if (song != null) {
+                boolean imageTogether = PreferenceManager.getDefaultSharedPreferences(getApplicationContext())
+                        .getBoolean("imageTogether", true);
 
-            if (song.getArtBmp() == null)
-                if (!imageTogether) {
-                    imageDownloader.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            song.fetchAlbumArt(getApplicationContext());                        // if song is not changed
-                            if (song == gate.getCurrentSong()) {
-                                synchronized (onSongChangeListeners) {
-                                    for (OnSongChangeListener l : onSongChangeListeners)
-                                        l.onAlbumArtLoaded(song.getArtBmp(), song.getMiniArtBmp());
+                if (song.getArtBmp() == null)
+                    if (!imageTogether) {
+                        imageDownloader.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                song.fetchAlbumArt(getApplicationContext());                        // if song is not changed
+                                if (song == gate.getCurrentSong()) {
+                                    synchronized (onSongChangeListeners) {
+                                        for (OnSongChangeListener l : onSongChangeListeners)
+                                            l.onAlbumArtLoaded(song.getArtBmp(), song.getMiniArtBmp());
+                                    }
+                                    RadioWidget.updateAlbumArt(getApplicationContext(), song.getMiniArtBmp());
                                 }
-                                RadioWidget.updateAlbumArt(getApplicationContext(), song.getMiniArtBmp());
                             }
-                        }
-                    });
-                } else
-                    song.fetchAlbumArt(getApplicationContext());
+                        });
+                    } else
+                        song.fetchAlbumArt(getApplicationContext());
+            }
 
+            final long currentTime = (new Date()).getTime();
             refreshSchedule.put(WebsiteGate.Subscription.CURRENT_SONG,
                     Math.max(currentTime + 5000,
                             Math.min(gate.getCurrentSongEndTime() + 30, currentTime + 180000)));
@@ -301,7 +302,7 @@ public class AnfoService extends Service implements AudioManager.OnAudioFocusCha
 
         notifyFetchResult(fetchNow);
 
-        if (gate.getCurrentSong() != null) {
+        if (song != null) {
             // SongPosChanged is not subscribed by enumset
             notifySongPosChanged();
         }

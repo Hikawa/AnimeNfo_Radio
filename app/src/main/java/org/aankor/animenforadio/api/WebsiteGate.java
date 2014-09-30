@@ -92,7 +92,7 @@ public class WebsiteGate {
         Matcher matcher = mainNowPlayingPattern.matcher(spans.first().text());
 
         if (!matcher.find()) {
-            currentSong = null;
+            unsetCurrentSong();
             return false;
         }
         SongInfo newSongInfo = new SongInfo(
@@ -191,7 +191,7 @@ public class WebsiteGate {
                 if (subscriptions.contains(Subscription.CURRENT_SONG))
                     currentSongPosUpdated = updateNowPlaying(res.getString("nowplaying"));
             } catch (Exception e) {
-                currentSong = null;
+                unsetCurrentSong();
             }
         }
 
@@ -204,7 +204,8 @@ public class WebsiteGate {
     }
 
     public void unsetCurrentSong() {
-        currentSong = null;
+        if (getCurrentSongEndTime() < (new Date()).getTime())
+            currentSong = null;
     }
 
     public enum Subscription {
